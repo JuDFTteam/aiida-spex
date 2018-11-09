@@ -1,0 +1,9 @@
+
+
+include aiida_spex/tests/run*
+recursive-include aiida_spex/tests/files/ *
+include setup.json
+include setup_requirements.txt
+include CHANGELOG.md
+include LICENSE
+include README.md

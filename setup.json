@@ -1,0 +1,47 @@
+{
+    "version" : "0.0.1",
+    "name" : "aiida-spex",
+    "url" : "https://github.com/JuDFTteam/aiida-spex",
+    "license" : "MIT License, see LICENSE.txt file.",
+    "author" : "JuDFTteam",
+    "description" : "Python SPEX simulation package containing an AiiDA Plugins for the SPEX code. Plus some workflows and utility",
+    "classifiers" : [
+        "License :: OSI Approved :: MIT License",
+        "Programming Language :: Python :: 2.7",
+        "Development Status :: 1 - Alpha",
+        "Environment :: Plugins",
+        "Intended Audience :: Science/Research",
+        "Topic :: Scientific/Engineering :: Physics",
+        "Natural Language :: English"
+    ],
+    "keywords" : "spex aiida gw workflows flapw juelich dft all-electron",
+    "include_package_data" : true,
+    "setup_requires" : [
+            "reentry"
+        ],
+    "reentry_register" : true,
+    "install_requires" : [
+            "aiida-core >= 0.12.0[atomic_tools]",
+            "aiida-fleur >= 0.6.0",
+            "pytest-cov >= 2.5.0",
+            "pytest >= 2.9",
+            "pgtest",
+    ],
+    "extras_require" : {
+            "graphs ": ["matplotlib",
+                        "masci-tools"]
+        },
+    "entry_points" : {
+        "aiida.calculations" : [
+            "spex.spex = aiida_fleur.calculation.fleur:FleurCalculation",
+        ],
+        "aiida.parsers" : [
+                "spex.spexparser = aiida_spex.parsers.spex:SpexParser",
+        ],
+        "aiida.workflows" : [
+            "spex.scf = aiida_spex.workflows.scf_gw:spex_scf_gw_wc",
+            "spex.gw0 = aiida_spex.workflows.gw0:spex_gw0_wc",
+            "spex.band = aiida_spex.workflows.band:spex_band_wc",
+        ]
+    }
+}
