@@ -1,0 +1,36 @@
+{
+    "name": "aiida-spex",
+    "author": "The SPEX Team",
+    "author_email": "a.chandran@fz-juelich.de",
+    "description": "AiiDA plugin for SPEX code",
+    "url": "https://github.com/anoopkcn/aiida-spex",
+    "license": "MIT",
+    "classifiers": [
+        "Programming Language :: Python",
+        "Intended Audience :: Science/Research",
+        "License :: OSI Approved :: MIT License",
+        "Natural Language :: English",
+        "Framework :: AiiDA"
+    ],
+    "version": "0.1.0a0",
+    "entry_points": {
+        "aiida.calculations": [
+            "spex = aiida_spex.calculations.spex:SpexCalculation"
+        ],
+        "aiida.data": [
+            "spex.spexinp = aiida_spex.data.spexinp:SpexinpData",
+        ],
+        "aiida.parsers": [
+            "spex.spex = aiida_spex.parsers.spex:SpexParser",
+        ],
+        "aiida.workflows": [
+            "spex.scf = aiida_spex.workflows.scf:spex_scf_wc"
+        ],
+    },
+    "include_package_data": true,
+    "setup_requires": ["reentry"],
+    "reentry_register": true,
+    "install_requires": [
+        "aiida-core>=1.0.0b3,<2.0.0"
+    ]
+}
