@@ -18,14 +18,14 @@
             "spex = aiida_spex.calculations.spex:SpexCalculation"
         ],
         "aiida.data": [
-            "spex.spexinp = aiida_spex.data.spexinp:SpexinpData",
+            "spex.spexinp = aiida_spex.data.spexinp:SpexinpData"
         ],
         "aiida.parsers": [
-            "spex.spex = aiida_spex.parsers.spex:SpexParser",
+            "spex.spex = aiida_spex.parsers.spex:SpexParser"
         ],
         "aiida.workflows": [
             "spex.scf = aiida_spex.workflows.scf:spex_scf_wc"
-        ],
+        ]
     },
     "include_package_data": true,
     "setup_requires": ["reentry"],
