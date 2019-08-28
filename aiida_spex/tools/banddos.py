@@ -7,11 +7,13 @@ import os
 import argparse
 import os.path
 
+
 def is_valid_file(parser, arg):
     if not os.path.exists(arg):
         parser.error("The file %s does not exist!" % arg)
     else:
         return open(arg, 'r')  # return an open file handle
+
 
 parser = argparse.ArgumentParser(
     description='process info which is not available in the metadata')
@@ -20,7 +22,7 @@ parser.add_argument("--fermi", type=float,
 
 args = parser.parse_args()
 
-hdffilename='/Users/chand/workbench/work/materials_docs/data/fleur/banddos_jc2.hdf'
+hdffilename = '/Users/chand/workbench/work/materials_docs/data/fleur/banddos_jc2.hdf'
 
 eV = 27.211386
 f = h5py.File(hdffilename, 'r')
@@ -55,7 +57,7 @@ eigVal = np.array(_eigVal)
 # eigVal.shape
 
 fermiEnergy = -0.204
-# fermiEnergy =  args.fermi 
+# fermiEnergy =  args.fermi
 print("K-mesh Fermi energy = ", fermiEnergy)
 
 
@@ -81,6 +83,7 @@ def kpath(kcoord):
     return kpts
 
 # print(kpath(kcoord))
+
 
 def writeBand(fileName, kpts, eigVal):
     '''writes atom-type contribution to bandstructure
@@ -172,6 +175,7 @@ def writeDos(infile, outfile):
             dosWriter.writerow(['{:.3f}'.format(dos[i, j])
                                 for j in range(colum)])
     os.system("sed -i '' 's/|//g' " + outfile)
+
 
 writeBand('banddos_jc.csv', kpath(kcoord), eigVal)
 # writelCharge('lband.csv', kpath(kcoord), lcharge)

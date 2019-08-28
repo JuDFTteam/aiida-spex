@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import numpy as np
 
 
@@ -18,7 +19,6 @@ if __name__ == "__main__":
         [[9.2974, 9.2974, 0.00], [-16.103569, 16.103569, 0.0], [0.0, 0.0, 13.5100]]
     )
 
-    inverse_bravais_matrix = inverse(bravais_matrix)
     cartesian_coordinates = np.array(
         [
             [9.2974000000, 0.0000000000, 1.0650000000],
@@ -52,7 +52,9 @@ if __name__ == "__main__":
     )
 
     print("Initial Positions:")
-    cartesian_to_internal(cartesian_coordinates, inverse_bravais_matrix)
+    cartesian_to_internal(cartesian_coordinates, inverse(bravais_matrix))
 
     print("Relaxed Positions:")
-    cartesian_to_internal(cartesian_coordinates2, inverse_bravais_matrix)
+    cartesian_to_internal(cartesian_coordinates2, inverse(bravais_matrix))
+    import subprocess
+    subprocess.run(["which", "python"])
