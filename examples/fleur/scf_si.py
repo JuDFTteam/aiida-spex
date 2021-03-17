@@ -17,6 +17,7 @@ from aiida.engine import submit, run
 # import the FleurinpgenCalculation
 from aiida_fleur.workflows.scf import FleurScfWorkChain
 from aiida_fleur.tools.common_fleur_wf import is_code, test_and_get_codenode
+# from aiida_spex.tools.converter import internal_to_cartesian
 
 Dict = DataFactory('dict')
 FleurinpData = DataFactory('fleur.fleurinp')
@@ -26,35 +27,31 @@ StructureData = DataFactory('structure')
 wf_para = Dict(dict={'fleur_runmax': 2,
                      'density_converged': 0.001,
                      'energy_converged': 0.002,
-                     'mode': 'gw',  # 'force', 'energy', 'density', 'gw
-                     'itmax_per_run': 20,
+                     'mode': 'gw',
+                     'itmax_per_run': 9,
                      'use_relax_xml': False,
                      'serial': False})
 
-options = Dict(dict={'resources': {"num_machines": 1, "num_mpiprocs_per_machine": 8},
+options = Dict(dict={'resources': {"num_machines": 1, "num_mpiprocs_per_machine": 2},
                      #  'queue_name': 'devel',
-                     'custom_scheduler_commands': '#SBATCH --account="jpgi10"',
+                    #  'custom_scheduler_commands': '#SBATCH --account="jpgi10"',
                      'max_wallclock_seconds':  30*60})
 
 
-struct = io.read('Si_mp-165_conventional_standard.cif')
-structure = StructureData(ase=struct)
+# MAPI -12 atom cubic system
+bohr_a_0 = 0.52917721092 
+a = 5.43  # in A
+cell = [[a, 0, 0],
+        [0, a, 0],
+        [0, 0, a]]
+structure = StructureData(cell=cell)
+structure.append_atom(position=(0.125*a,0.125*a,0.125*a), symbols='Si', name='Si1')
+structure.append_atom(position=(-0.125*a,-0.125*a,-0.125*a), symbols='Si', name='Si2')
+structure.pbc = (True, True, True)
 
 parameters = Dict(dict={
-    #     'atom': {'element': 'Si',
-    #  'jri': 981,
-    #  'rmt': 2.1,
-    # 'dx' : 0.015,
-    #  'lmax': 12,
-    #  },
-    'comp': {'kmax': 5.0,
-             #  'gmax': 15.0,
-             #  'gmaxxc': 12.5
-             },
-    'kpt': {'div1': 4,
-            'div2': 4,
-            'div3': 4
-            }
+    'comp': {'kmax': 4.0},
+    'kpt': {'div1': 4, 'div2': 4, 'div3': 4}
 })
 
 # submit
@@ -71,12 +68,12 @@ inputs['calc_parameters'] = default['calc_parameters']
 inputs['options'] = default['options']
 
 
-inpgen_code = is_code(19877) 
+inpgen_code = is_code(1)
 inputs['inpgen'] = test_and_get_codenode(
     inpgen_code, expected_code_type='fleur.inpgen')
-fleur_code = is_code(19878)
+fleur_code = is_code(2)
 inputs['fleur'] = test_and_get_codenode(
     fleur_code, expected_code_type='fleur.fleur')
 
-res = submit(FleurScfWorkChain, **inputs)
+res = run(FleurScfWorkChain, **inputs)
 print(("RUNTIME INFO: {}".format(res)))

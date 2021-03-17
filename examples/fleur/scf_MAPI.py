@@ -88,10 +88,12 @@ inputs['wf_parameters'] = default['wf_parameters']
 inputs['structure'] = default['structure']
 inputs['calc_parameters'] = default['calc_parameters']
 inputs['options'] = default['options']
-fleur_code = is_code(19878)
-inputs['fleur'] = test_and_get_codenode(fleur_code, expected_code_type='fleur.fleur')
-inpgen_code = is_code(19877)
-inputs['inpgen'] = test_and_get_codenode(inpgen_code, expected_code_type='fleur.inpgen')
+inpgen_code = is_code(44188)
+inputs['inpgen'] = test_and_get_codenode(
+    inpgen_code, expected_code_type='fleur.inpgen')
+fleur_code = is_code(44189)
+inputs['fleur'] = test_and_get_codenode(
+    fleur_code, expected_code_type='fleur.fleur')
 
 res = submit(FleurScfWorkChain, **inputs)
 print("##################### Submited FleurScfWorkChain #####################")
