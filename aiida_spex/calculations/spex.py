@@ -31,9 +31,8 @@ class SpexCalculation(CalcJob):
     _OUTPUT_FILE = "spex.out"
 
     # these will be shown in AiiDA
-    _OUTPUT_FILE_NAME = "spex.out"  
+    _OUTPUT_FILE_NAME = "spex.out"
     _INPUT_FILE_NAME = "spex.inp"
-
 
     # Files needed for the SPEX calculation
     _OUTXML_FILE_NAME = "out.xml"
@@ -49,7 +48,6 @@ class SpexCalculation(CalcJob):
     _ERROR_FILE_NAME = "out.error"
 
     # other
-    _OUT_FILE_NAME = "out"
     _KPTS_FILE_NAME = "kpts"
     _QPTS_FILE_NAME = "qpts"
     _POT_FILE_NAME = "pot*"
@@ -195,7 +193,8 @@ class SpexCalculation(CalcJob):
             )
         else:
             # extract parent calculation
-            parent_calcs = parent_calc_folder.get_incoming(node_class=CalcJob).all()
+            parent_calcs = parent_calc_folder.get_incoming(
+                node_class=CalcJob).all()
             n_parents = len(parent_calcs)
             if n_parents != 1:
                 raise UniquenessError(
@@ -218,7 +217,8 @@ class SpexCalculation(CalcJob):
                     # don't copy files, copy files locally
                     copy_remotely = False
             else:
-                raise InputValidationError("parent_calc, must be a 'fleur calculation'")
+                raise InputValidationError(
+                    "parent_calc, must be a 'fleur calculation'")
 
         # check existence of settings (optional)
         if "settings" in self.inputs:
@@ -255,8 +255,8 @@ class SpexCalculation(CalcJob):
             if copy_remotely:  # on same computer.
                 # from fleurmodes
                 filelist_tocopy_remote = (
-                        filelist_tocopy_remote + self._copy_filelist_scf_remote
-                    )
+                    filelist_tocopy_remote + self._copy_filelist_scf_remote
+                )
                 # from settings, user specified
                 # TODO: check if list?
                 for file1 in settings_dict.get("additional_remotecopy_list", []):
@@ -270,12 +270,14 @@ class SpexCalculation(CalcJob):
                     remote_copy_list.append(
                         (
                             parent_calc_folder.computer.uuid,
-                            os.path.join(parent_calc_folder.get_remote_path(), file1),
+                            os.path.join(
+                                parent_calc_folder.get_remote_path(), file1),
                             self._get_output_folder,
                         )
                     )
 
-                self.logger.info("remote copy file list {}".format(remote_copy_list))
+                self.logger.info(
+                    "remote copy file list {}".format(remote_copy_list))
 
         # create a JUDFT_WARN_ONLY file in the calculation folder
         # with io.StringIO(u"/n") as handle:
@@ -283,6 +285,14 @@ class SpexCalculation(CalcJob):
         #     folder.create_file_from_filelike(
         #         handle, filename=warn_only_filename, mode="w"
         #     )
+
+
+        input_filename = folder.get_abs_path(self._INPUT_FILE_NAME)
+        # self.raw_inp="BZ 4 4 4\nJOB GW 1:(4-12)\nNBAND 80\nITERATE\n"
+        
+        with open(input_filename, 'w') as infile:
+            # Should there be a title to identify the input?
+            infile.write('{}'.format(self.raw_inp))
 
         ########## MAKE CALCINFO ###########
 
@@ -302,14 +312,11 @@ class SpexCalculation(CalcJob):
 
         # Retrieve by default the output file and the xml file
         retrieve_list = []
+        retrieve_list.append(self._OUTPUT_FILE_NAME)
         retrieve_list.append(self._OUTXML_FILE_NAME)
         retrieve_list.append(self._INPXML_FILE_NAME)
         retrieve_list.append(self._SHELLOUTPUT_FILE_NAME)
         retrieve_list.append(self._ERROR_FILE_NAME)
-        retrieve_list.append(self._USAGE_FILE_NAME)
-        # retrieve_list.append(self._TIME_INFO_FILE_NAME)
-        # retrieve_list.append(self._OUT_FILE_NAME)
-        retrieve_list.append(self._CDN_LAST_HDF5_FILE_NAME)
 
         for mode_file in mode_retrieved_filelist:
             retrieve_list.append(mode_file)
@@ -331,11 +338,9 @@ class SpexCalculation(CalcJob):
             calcinfo.retrieve_list.append(file1)
 
         codeinfo = CodeInfo()
-        # should look like: codepath -xmlInput < inp.xml > shell.out 2>&1
-        walltime_sec = self.node.get_attribute("max_wallclock_seconds")
-        cmdline_params = []  # , "-wtime", "{}".format(walltime_sec)]"-xml"
 
-        cmdline_params.append("-minimalOutput")
+        walltime_sec = self.node.get_attribute("max_wallclock_seconds")
+        cmdline_params = ['>', '{}'.format(self._OUTPUT_FILE_NAME)]  # > spex.out
 
         if walltime_sec:
             walltime_min = max(1, walltime_sec / 60)
@@ -347,11 +352,10 @@ class SpexCalculation(CalcJob):
             cmdline_params.append(command)
 
         codeinfo.cmdline_params = list(cmdline_params)
-        # + ["<", self._INPXML_FILE_NAME,
-        # ">", self._SHELLOUTPUT_FILE_NAME, "2>&1"]
+
         codeinfo.code_uuid = code.uuid
         codeinfo.withmpi = self.node.get_attribute("max_wallclock_seconds")
-        codeinfo.stdin_name = None  # self._INPUT_FILE_NAME
+        codeinfo.stdin_name = self._INPUT_FILE_NAME
         codeinfo.stdout_name = self._SHELLOUTPUT_FILE_NAME
         # codeinfo.join_files = True
         codeinfo.stderr_name = self._ERROR_FILE_NAME

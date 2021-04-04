@@ -33,11 +33,12 @@ wf_para = Dict(dict={'fleur_runmax': 2,
 
 options = Dict(dict={'resources': {"num_machines": 1, "num_mpiprocs_per_machine": 4},
                      #  'queue_name': 'devel',
-                    #  'custom_scheduler_commands': '#SBATCH --account="jpgi10"',
+                     #  'custom_scheduler_commands': '#SBATCH --account="jpgi10"',
                      'max_wallclock_seconds':  30*60})
 
 
-struct = io.read('~/workbench/devel/aiida-spex/examples/fleur/Si_mp-165_conventional_standard.cif')
+struct = io.read(
+    '~/workbench/devel/aiida-spex/examples/fleur/Si_mp-165_conventional_standard.cif')
 structure = StructureData(ase=struct)
 
 parameters = Dict(dict={
@@ -59,10 +60,10 @@ inputs['calc_parameters'] = default['calc_parameters']
 inputs['options'] = default['options']
 
 
-inpgen_code = is_code(1)
+inpgen_code = is_code(44188)
 inputs['inpgen'] = test_and_get_codenode(
     inpgen_code, expected_code_type='fleur.inpgen')
-fleur_code = is_code(2)
+fleur_code = is_code(44189)
 inputs['fleur'] = test_and_get_codenode(
     fleur_code, expected_code_type='fleur.fleur')
 

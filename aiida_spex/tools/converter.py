@@ -7,8 +7,16 @@ def inverse(bravais_matrix):
 
 
 def cartesian_to_internal(coordinate_vectors, bravais_matrix):
+    result = []
     for coordinate_vector in coordinate_vectors:
-        print(np.inner(bravais_matrix, coordinate_vector))
+        result.append(np.inner(bravais_matrix, coordinate_vector))
+    return result
+
+def internal_to_cartesian(coordinate_vectors, bravais_matrix):
+    result = []
+    for coordinate_vector in coordinate_vectors:
+        result.append(np.dot(coordinate_vector,bravais_matrix))
+    return result
 
 
 if __name__ == "__main__":
