@@ -58,5 +58,5 @@ inputs['remote_data'] = remote_data
 inputs['raw_spexinp'] = raw_spexinp
 
 
-res = submit(SpexJobWorkChain, **inputs)
+res = run(SpexJobWorkChain, **inputs)
 print(("RUNTIME INFO: {}".format(res)))

@@ -49,11 +49,10 @@ class SpexJobWorkChain(WorkChain):
 
     _workflowversion = '0.1.0'
     _default_wf_para = {
-        'spex_runmax': 4
+        'spex_runmax': 1
     }
 
     _default_options = {
-        'optimize_resources': True,
         'resources': {
             'num_machines': 1,
             'num_mpiprocs_per_machine': 1
@@ -72,8 +71,8 @@ class SpexJobWorkChain(WorkChain):
         spec.input('options', valid_type=Dict, required=False)
         spec.input('wf_parameters', valid_type=Dict, required=False)
 
-        spec.input('calc_parameters', valid_type=Dict, required=False)
-        spec.input('raw_spexinp', valid_type=six.string_types, required=False)
+        # spec.input('calc_parameters', valid_type=Dict, required=False)
+        spec.input('raw_spexinp', valid_type=six.string_types, non_db=True, required=False)
         spec.input('remote_data', valid_type=RemoteData, required=False)
 
         spec.input('settings', valid_type=Dict, required=False)
@@ -82,6 +81,8 @@ class SpexJobWorkChain(WorkChain):
 
         spec.output('output_job_wc_para', valid_type=Dict)
         spec.output('last_spex_calc_output', valid_type=Dict)
+
+        spec.exit_code(230, 'ERROR_INVALID_INPUT_PARAM', message='Invalid workchain parameters.')
 
     def start(self):
         """
@@ -166,6 +167,15 @@ class SpexJobWorkChain(WorkChain):
         else:
             remote = None
 
+        # This should move to validation
+        # if 'calc_parameters' in self.inputs:
+        #     params = self.inputs.calc_parameters
+        if 'raw_spexinp' in self.inputs:
+            params = self.inputs.raw_spexinp
+        else:
+            return self.exit_codes.ERROR_INVALID_INPUT_PARAM
+
+
         label = ' '
         description = ' '
 
@@ -177,7 +187,7 @@ class SpexJobWorkChain(WorkChain):
                                          options,
                                          label,
                                          description,
-                                         settings)
+                                         settings, params)
         future = self.submit(SpexBaseWorkChain, **inputs_builder)
         self.ctx.loop_count = self.ctx.loop_count + 1
         self.report('INFO: run SPEX number: {}'.format(self.ctx.loop_count))
@@ -237,10 +247,6 @@ class SpexJobWorkChain(WorkChain):
         else:
             outdict = create_job_result_node(outpara=outputnode_t)
 
-        # Now it always returns changed fleurinp that was actually used in the calculation
-        if self.ctx.fleurinp is not None:
-            outdict['fleurinp'] = self.ctx.fleurinp
-
         if last_calc_out:
             outdict['last_spex_calc_output'] = last_calc_out
 
@@ -248,8 +254,6 @@ class SpexJobWorkChain(WorkChain):
         for link_name, node in six.iteritems(outdict):
             self.out(link_name, node)
 
-        if not self.ctx.reached_conv:
-            return self.exit_codes.ERROR_DID_NOT_CONVERGE
 
     def control_end_wc(self, errormsg):
         """

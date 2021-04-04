@@ -44,7 +44,6 @@ class SpexCalculation(CalcJob):
     _BASIS_FILE_NAME = "basis.hdf"
     _POT_FILE_NAME = "pot.hdf"
     _ECORE_FILE = "ecore"
-    _SHELLOUTPUT_FILE_NAME = "shell.out"
     _ERROR_FILE_NAME = "out.error"
 
     # other
@@ -66,13 +65,9 @@ class SpexCalculation(CalcJob):
     # If a parent calculation exists, other files will be copied remotely when required
     #######
 
-    _copy_filelist1 = [
-        _INPUT_FILE_NAME,
-        _ENPARA_FILE_NAME,
-        # _SYMOUT_FILE_NAME,
-        # _CDN1_FILE_NAME,
-        _KPTS_FILE_NAME
-    ]
+    _copy_filelist_job_remote = [_OUTXML_FILE_NAME, _INPXML_FILE_NAME, _CDN_HDF5_FILE_NAME, _BASIS_FILE_NAME, _POT_FILE_NAME, _ECORE_FILE]
+    
+    _copy_filelist1 = [ _INPUT_FILE_NAME, _ENPARA_FILE_NAME]
 
     # possible settings_dict keys
     _settings_keys = [
@@ -104,6 +99,9 @@ class SpexCalculation(CalcJob):
             "needed files for a SPEX calc, only edited files should be "
             "uploaded from the repository.",
         )
+        spec.input('parameters', valid_type=six.string_types,required=False,
+                   non_db=True,help='Calculation parameters.')
+                   
         spec.input(
             "settings",
             valid_type=Dict,
@@ -240,9 +238,10 @@ class SpexCalculation(CalcJob):
                     "".format(key, self._settings_keys)
                 )
 
-        # TODO: Detailed check of FleurinpData
-        # if certain files are there in fleurinpData
-        # from where to copy
+        if 'parameters' in self.inputs:
+            input_parameters = self.inputs.parameters
+        else:
+            input_parameters =''
 
         if has_parent:
             # copy necessary files
@@ -255,7 +254,7 @@ class SpexCalculation(CalcJob):
             if copy_remotely:  # on same computer.
                 # from fleurmodes
                 filelist_tocopy_remote = (
-                    filelist_tocopy_remote + self._copy_filelist_scf_remote
+                    filelist_tocopy_remote + self._copy_filelist_job_remote
                 )
                 # from settings, user specified
                 # TODO: check if list?
@@ -288,11 +287,10 @@ class SpexCalculation(CalcJob):
 
 
         input_filename = folder.get_abs_path(self._INPUT_FILE_NAME)
-        # self.raw_inp="BZ 4 4 4\nJOB GW 1:(4-12)\nNBAND 80\nITERATE\n"
         
         with open(input_filename, 'w') as infile:
             # Should there be a title to identify the input?
-            infile.write('{}'.format(self.raw_inp))
+            infile.write('{}'.format(input_parameters))
 
         ########## MAKE CALCINFO ###########
 
@@ -315,7 +313,6 @@ class SpexCalculation(CalcJob):
         retrieve_list.append(self._OUTPUT_FILE_NAME)
         retrieve_list.append(self._OUTXML_FILE_NAME)
         retrieve_list.append(self._INPXML_FILE_NAME)
-        retrieve_list.append(self._SHELLOUTPUT_FILE_NAME)
         retrieve_list.append(self._ERROR_FILE_NAME)
 
         for mode_file in mode_retrieved_filelist:
@@ -356,7 +353,7 @@ class SpexCalculation(CalcJob):
         codeinfo.code_uuid = code.uuid
         codeinfo.withmpi = self.node.get_attribute("max_wallclock_seconds")
         codeinfo.stdin_name = self._INPUT_FILE_NAME
-        codeinfo.stdout_name = self._SHELLOUTPUT_FILE_NAME
+        codeinfo.stdout_name = self._OUTPUT_FILE_NAME
         # codeinfo.join_files = True
         codeinfo.stderr_name = self._ERROR_FILE_NAME
 

@@ -39,11 +39,11 @@ def is_code(code):
         return None
 
 
-def get_inputs_spex(inp_layout, remote, spexcode, options, label='', description='', settings=None, params=None, **kwargs):
+def get_inputs_spex(spexcode, remote, options, label='', description='', settings=None, params=None, serial=False, **kwargs):
     '''
     Assembles the input dictionary for Spex Calculation.
 
-    :param inp_layout: layout of the spex.inp file
+    :param spexinp_parameters: layout of the spex.inp file
     :param remote: remote_folder from the previous calculation of RemoteData type
     :param spexcode: spex code of Code type
     :param options: calculation options that will be stored in metadata
@@ -53,17 +53,15 @@ def get_inputs_spex(inp_layout, remote, spexcode, options, label='', description
 
     Example of use::
 
-        inputs_build = get_inputs_spex(inp_layout, spexcode, options, label,
+        inputs_build = get_inputs_spex(spexinp_parameters, spexcode, options, label,
                                          description, params=params)
         future = self.submit(inputs_build)
 
     '''
 
-    SpexProcess = CalculationFactory('spex.spex')
-    inputs = SpexProcess.get_builder()
+    Dict = DataFactory('dict')
+    inputs = {}
 
-    if inp_layout:
-        inputs['inp_layout'] = inp_layout
     if remote:
         inputs['parent_folder'] = remote
     if spexcode:
@@ -72,21 +70,37 @@ def get_inputs_spex(inp_layout, remote, spexcode, options, label='', description
         inputs['parameters'] = params
     if settings:
         inputs['settings'] = settings
+
     if description:
-        inputs['metadata']['description'] = description
+        inputs['description'] = description
     else:
-        inputs['metadata']['description'] = ''
+        inputs['description'] = ''
 
     if label:
-        inputs['metadata']['label'] = label
+        inputs['label'] = label
     else:
-        inputs['metadata']['label'] = ''
+        inputs['label'] = ''
 
-    if not options:
-        options = {}
+    if serial:
+        if not options:
+            options = {}
+        options['withmpi'] = False  # for now
+        # TODO not every machine/scheduler type takes number of machines
+        options['resources'] = {'num_machines': 1, 'num_mpiprocs_per_machine': 1}
+    else:
+        options['withmpi'] = True
+
+    custom_commands = options.get('custom_scheduler_commands', '')
+    options['custom_scheduler_commands'] = custom_commands
+
+    if settings:
+        if isinstance(settings, Dict):
+            inputs['settings'] = settings
+        else:
+            inputs['settings'] = Dict(dict=settings)
 
     if options:
-        inputs['metadata']['options'] = options
+         inputs['options'] = Dict(dict=options)
 
     return inputs
 

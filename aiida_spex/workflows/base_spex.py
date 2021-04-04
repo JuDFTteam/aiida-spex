@@ -25,7 +25,7 @@ from aiida.plugins import CalculationFactory, DataFactory
 
 from aiida_spex.common.workchain.base.restart import BaseRestartWorkChain
 from aiida_spex.common.workchain.utils import register_error_handler, ErrorHandlerReport
-from aiida_spex.calculation.spex import SpexCalculation as SpexProcess
+from aiida_spex.calculations.spex import SpexCalculation as SpexProcess
 
 
 class SpexBaseWorkChain(BaseRestartWorkChain):
@@ -42,6 +42,9 @@ class SpexBaseWorkChain(BaseRestartWorkChain):
                    valid_type=orm.RemoteData,
                    required=False,
                    help='An optional working directory of a previously completed calculation to restart from.')
+        spec.input('parameters', valid_type=six.string_types, required=False,
+                   non_db=True, help='Calculation parameters.')
+
         spec.input('settings',
                    valid_type=orm.Dict,
                    required=False,
@@ -72,6 +75,9 @@ class SpexBaseWorkChain(BaseRestartWorkChain):
         spec.output('remote_folder', valid_type=orm.RemoteData, required=False)
         spec.output('final_calc_uuid', valid_type=orm.Str, required=False)
 
+        spec.exit_code(390, 'ERROR_NOT_OPTIMAL_RESOURCES', message='Computational resources are not optimal.')
+
+
 
     def validate_inputs(self):
         """
@@ -79,7 +85,52 @@ class SpexBaseWorkChain(BaseRestartWorkChain):
         Also define dictionary `inputs` in the context, that will contain the inputs for the
         calculation that will be launched in the `run_calculation` step.
         """
-        pass
+        self.ctx.inputs = AttributeDict({
+            'code': self.inputs.code,
+            'metadata': AttributeDict()
+        })
+
+        input_options = self.inputs.options.get_dict()
+        self.ctx.optimize_resources = input_options.pop('optimize_resources', False)
+        self.ctx.inputs.metadata.options = input_options
+
+        if 'parent_folder' in self.inputs:
+            self.ctx.inputs.parent_folder = self.inputs.parent_folder
+
+        if 'description' in self.inputs:
+            self.ctx.inputs.metadata.description = self.inputs.description
+        else:
+            self.ctx.inputs.metadata.description = ''
+        if 'label' in self.inputs:
+            self.ctx.inputs.metadata.label = self.inputs.label
+        else:
+            self.ctx.inputs.metadata.label = ''
+
+        if 'settings' in self.inputs:
+            self.ctx.inputs.settings = self.inputs.settings.get_dict()
+        else:
+            self.ctx.inputs.settings = {}
+
+        if not self.ctx.optimize_resources:
+            self.ctx.can_be_optimised = False  # set this for handlers to not change resources
+            return
+
+        resources_input = self.ctx.inputs.metadata.options['resources']
+        try:
+            self.ctx.num_machines = int(resources_input['num_machines'])
+            self.ctx.num_mpiprocs_per_machine = int(resources_input['num_mpiprocs_per_machine'])
+        except KeyError:
+            self.ctx.can_be_optimised = False
+            self.report('WARNING: Computation resources were not optimised.')
+        else:
+            try:
+                self.ctx.num_cores_per_mpiproc = int(resources_input['num_cores_per_mpiproc'])
+                self.ctx.use_omp = True
+                self.ctx.suggest_mpi_omp_ratio = self.ctx.num_mpiprocs_per_machine / self.ctx.num_cores_per_mpiproc
+            except KeyError:
+                self.ctx.num_cores_per_mpiproc = 1
+                self.ctx.use_omp = False
+                self.ctx.suggest_mpi_omp_ratio = 1
 
 
 
