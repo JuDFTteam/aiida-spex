@@ -337,7 +337,7 @@ class SpexCalculation(CalcJob):
         codeinfo = CodeInfo()
 
         walltime_sec = self.node.get_attribute("max_wallclock_seconds")
-        cmdline_params = ['>', '{}'.format(self._OUTPUT_FILE_NAME)]  # > spex.out
+        cmdline_params = []  # > spex.out
 
         if walltime_sec:
             walltime_min = max(1, walltime_sec / 60)
