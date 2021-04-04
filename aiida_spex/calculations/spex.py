@@ -241,7 +241,7 @@ class SpexCalculation(CalcJob):
         if 'parameters' in self.inputs:
             input_parameters = self.inputs.parameters
         else:
-            input_parameters =''
+            input_parameters ="BZ 4 4 4\nJOB GW 1:(4-12)\nNBAND 80\nITERATE\n"
 
         if has_parent:
             # copy necessary files
@@ -277,13 +277,6 @@ class SpexCalculation(CalcJob):
 
                 self.logger.info(
                     "remote copy file list {}".format(remote_copy_list))
-
-        # create a JUDFT_WARN_ONLY file in the calculation folder
-        # with io.StringIO(u"/n") as handle:
-        #     warn_only_filename = self._JUDFT_WARN_ONLY_INFO_FILE_NAME
-        #     folder.create_file_from_filelike(
-        #         handle, filename=warn_only_filename, mode="w"
-        #     )
 
 
         input_filename = folder.get_abs_path(self._INPUT_FILE_NAME)
@@ -336,13 +329,13 @@ class SpexCalculation(CalcJob):
 
         codeinfo = CodeInfo()
 
-        walltime_sec = self.node.get_attribute("max_wallclock_seconds")
+        # walltime_sec = self.node.get_attribute("max_wallclock_seconds")
         cmdline_params = []  # > spex.out
 
-        if walltime_sec:
-            walltime_min = max(1, walltime_sec / 60)
-            cmdline_params.append("-wtime")
-            cmdline_params.append("{}".format(walltime_min))
+        # if walltime_sec:
+        #     walltime_min = max(1, walltime_sec / 60)
+        #     cmdline_params.append("-wtime")
+        #     cmdline_params.append("{}".format(walltime_min))
 
         # user specific commandline_options
         for command in settings_dict.get("cmdline", []):
