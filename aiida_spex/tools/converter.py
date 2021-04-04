@@ -1,24 +1,33 @@
+from __future__ import absolute_import
 import numpy as np
 
 
-def inverse(B):
-    return np.linalg.inv(B)
+def inverse(bravais_matrix):
+    return np.linalg.inv(bravais_matrix)
 
 
-def Cartesian_to_Internal(A, B):
-    for i in A:
-        print(np.inner(B, i))
+def cartesian_to_internal(coordinate_vectors, bravais_matrix):
+    result = []
+    for coordinate_vector in coordinate_vectors:
+        result.append(np.inner(bravais_matrix, coordinate_vector))
+    return result
+
+def internal_to_cartesian(coordinate_vectors, bravais_matrix):
+    result = []
+    for coordinate_vector in coordinate_vectors:
+        result.append(np.dot(coordinate_vector,bravais_matrix))
+    return result
 
 
 if __name__ == "__main__":
 
-    B = np.array(
+    # test functions
+    #
+    bravais_matrix = np.array(
         [[9.2974, 9.2974, 0.00], [-16.103569, 16.103569, 0.0], [0.0, 0.0, 13.5100]]
     )
 
-    Bi = inverse(B)  # inverse
-
-    CArray = np.array(
+    cartesian_coordinates = np.array(
         [
             [9.2974000000, 0.0000000000, 1.0650000000],
             [0.0000000000, -2.6838208393, -3.0650000000],
@@ -34,7 +43,7 @@ if __name__ == "__main__":
         ]
     )
 
-    CArray2 = np.array(
+    cartesian_coordinates2 = np.array(
         [
             [9.2974000000, 0.0000000000, 1.0712857790],
             [0.0000000000, -2.6862280017, -3.0650000000],
@@ -51,7 +60,9 @@ if __name__ == "__main__":
     )
 
     print("Initial Positions:")
-    Cartesian_to_Internal(CArray, Bi)
+    cartesian_to_internal(cartesian_coordinates, inverse(bravais_matrix))
 
     print("Relaxed Positions:")
-    Cartesian_to_Internal(CArray2, Bi)
+    cartesian_to_internal(cartesian_coordinates2, inverse(bravais_matrix))
+    import subprocess
+    subprocess.run(["which", "python"])

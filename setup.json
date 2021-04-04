@@ -15,17 +15,17 @@
     "version": "0.1.0a0",
     "entry_points": {
         "aiida.calculations": [
-            "spex = aiida_spex.calculations.spex:SpexCalculation"
+            "spex.spex = aiida_spex.calculations.spex:SpexCalculation"
         ],
         "aiida.data": [
-            "spex.spexinp = aiida_spex.data.spexinp:SpexinpData",
+            "spex.spexinp = aiida_spex.data.spexinp:SpexinpData"
         ],
         "aiida.parsers": [
-            "spex.spex = aiida_spex.parsers.spex:SpexParser",
+            "spex.spexparser = aiida_spex.parsers.spex:SpexParser"
         ],
         "aiida.workflows": [
-            "spex.scf = aiida_spex.workflows.scf:spex_scf_wc"
-        ],
+            "spex.gw = aiida_spex.workflows.gw:SpexGwWorkchain"
+        ]
     },
     "include_package_data": true,
     "setup_requires": ["reentry"],
