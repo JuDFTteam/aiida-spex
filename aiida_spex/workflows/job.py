@@ -95,10 +95,8 @@ class SpexJobWorkChain(WorkChain):
         # internal para /control para
         self.ctx.last_base_wc = None
         self.ctx.loop_count = 0
-        self.ctx.relax_generated = False
         self.ctx.calcs = []
         self.ctx.abort = False
-        self.ctx.reached_conv = True
 
         wf_default = self._default_wf_para
         if 'wf_parameters' in self.inputs:
@@ -205,10 +203,8 @@ class SpexJobWorkChain(WorkChain):
         try:  # if something failed, we still might be able to retrieve something
             last_calc_out = self.ctx.last_base_wc.outputs.output_parameters
             retrieved = self.ctx.last_base_wc.outputs.retrieved
-            last_calc_out_dict = last_calc_out.get_dict()
         except (NotExistent, AttributeError):
             last_calc_out = None
-            last_calc_out_dict = {}
             retrieved = None
 
         outputnode_dict = {}
@@ -222,26 +218,12 @@ class SpexJobWorkChain(WorkChain):
         outputnode_dict['warnings'] = self.ctx.warnings
         outputnode_dict['errors'] = self.ctx.errors
 
-        if self.ctx.successful and self.ctx.reached_conv:
-            if len(self.ctx.total_energy) <= 1:  # then len(self.ctx.all_forces) <= 1 too
-                self.report('STATUS: Done, the convergence criteria are reached.\n'
-                            'INFO: The charge density of the SPEX calculation '
-                            'converged after {} SPEX runs, {} iterations and {} sec '
-                            'walltime to {} "me/bohr^3" \n'
-                            'INFO: Did not manage to get energy and largest force difference '
-                            'between two last iterations, probably converged in a single iteration'
-                            ''.format(self.ctx.loop_count, last_calc_out_dict.get('number_of_iterations_total', None),
-                                      self.ctx.total_wall_time, outputnode_dict['distance_charge']))
-            else:
-                self.report('STATUS: Done, the convergence criteria are reached.\n'
-                            'INFO: The charge density of the SPEX calculation '
-                            'converged after {} SPEX runs, {} iterations and {} sec '
-                            'walltime to {} "me/bohr^3" \n'
-                            'INFO: The total energy difference of the last two iterations '
-                            'is {} Htr and largest force difference is {} Htr/bohr'
-                            ''.format(self.ctx.loop_count, last_calc_out_dict.get('number_of_iterations_total', None), self.ctx.total_wall_time,
-                                      outputnode_dict['distance_charge'], self.ctx.energydiff, self.ctx.forcediff))
-        else:  # Termination ok, but not converged yet...
+        if self.ctx.successful:
+            self.report('STATUS: Done, the termination criteria is reached.\n'
+                        'INFO: the SPEX calculation '
+                        'finished after {} SPEX runs and took {} sec \n'
+                        ''.format(self.ctx.loop_count, self.ctx.total_wall_time))
+        else:  # Termination ok, but not finished yet...
             if self.ctx.abort:  # some error occurred, do not use the output.
                 self.report(
                     'STATUS/ERROR: I abort, see logs and ' 'errors/warning/hints in output_job_wc_para')
@@ -249,11 +231,11 @@ class SpexJobWorkChain(WorkChain):
         outputnode_t = Dict(dict=outputnode_dict)
         # this is unsafe so far, because last_calc_out could not exist...
         if last_calc_out:
-            outdict = create_scf_result_node(outpara=outputnode_t,
+            outdict = create_job_result_node(outpara=outputnode_t,
                                              last_calc_out=last_calc_out,
                                              last_calc_retrieved=retrieved)
         else:
-            outdict = create_scf_result_node(outpara=outputnode_t)
+            outdict = create_job_result_node(outpara=outputnode_t)
 
         # Now it always returns changed fleurinp that was actually used in the calculation
         if self.ctx.fleurinp is not None:
@@ -282,7 +264,7 @@ class SpexJobWorkChain(WorkChain):
 
 
 @cf
-def create_scf_result_node(**kwargs):
+def create_job_result_node(**kwargs):
     """
     This is a pseudo wf, to create the right graph structure of AiiDA.
     This wokfunction will create the output node in the database.
