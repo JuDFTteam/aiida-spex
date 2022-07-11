@@ -249,7 +249,11 @@ class SpexCalculation(CalcJob):
 
         if 'parameters' in self.inputs:
             input_parameters = self.inputs.parameters
+        elif 'raw_parameters' in self.inputs:
+            # Raw parameters won't provide parameter validation
+            input_parameters = self.inputs.raw_parameters
         else:
+            # TODO: raise error if no parameters given, but for now use a general raw parameter
             input_parameters ="BZ 4 4 4\nJOB GW 1:(4-12)\nNBAND 80\nITERATE\n"
 
         if has_parent:
@@ -312,6 +316,7 @@ class SpexCalculation(CalcJob):
 
         # Retrieve by default the output file and the xml file
         retrieve_list = []
+        retrieve_list.append(self._INPUT_FILE_NAME)
         retrieve_list.append(self._OUTPUT_FILE_NAME)
         retrieve_list.append(self._OUTXML_FILE_NAME)
         retrieve_list.append(self._INPXML_FILE_NAME)

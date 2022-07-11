@@ -30,7 +30,8 @@ wf_parameters = Dict(dict={'spex_runmax': 1, #Note that runmax > 1 only works wi
                      'serial': False})
 
 remote_data = load_node(44402) # Remote data folder must have necessary files for a spex run
-raw_spexinp="BZ 4 4 4\nJOB GW 1:(4-12)\nNBAND 80\nITERATE\n"
+raw_spexinp="BZ 4 4 4\nJOB GW 1:(4-12)\nNBAND 80\nITERATE\nPROJET\n"
+
 parameters = Dict(dict={
     'BZ': [4,4,4],
     'NBAND': 80,
@@ -46,6 +47,10 @@ parameters = Dict(dict={
     'ITERATE': True # default = True
 })
 
+settings = Dict(dict={
+    'additional_retrieve_list': ['spex.binfo'],
+})
+
 
 inputs = {}
 spex_code = is_code(44190)
@@ -55,7 +60,7 @@ inputs['wf_parameters'] = wf_parameters
 
 inputs['remote_data'] = remote_data
 # inputs['calc_parameters'] = parameters
-inputs['raw_spexinp'] = raw_spexinp
+inputs['raw_parameters'] = raw_spexinp
 
 
 res = run(SpexJobWorkChain, **inputs)
