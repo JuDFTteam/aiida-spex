@@ -3,20 +3,19 @@
 Here we run the FleurScfWorkChain
 """
 # pylint: disable=invalid-name
-from __future__ import absolute_import
-from __future__ import print_function
+from __future__ import absolute_import, print_function
+
 import argparse
 from pprint import pprint
+
+from aiida.engine import run, submit
+from aiida.orm import load_node
+from aiida.plugins import DataFactory
 from ase import io
 
-
-from aiida.plugins import DataFactory
-from aiida.orm import load_node
-from aiida.engine import submit, run
-
+from aiida_spex.tools.common_spex_wf import is_code, test_and_get_codenode
 # import the FleurinpgenCalculation
 from aiida_spex.workflows.job import SpexJobWorkChain
-from aiida_spex.tools.common_spex_wf import is_code, test_and_get_codenode
 
 Dict = DataFactory('dict')
 

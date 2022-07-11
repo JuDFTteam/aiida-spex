@@ -13,17 +13,16 @@
 This file contains a CalcJob that represents SPEX calculation.
 """
 from __future__ import absolute_import
-import os
-import io
-import six
 
-from aiida.engine import CalcJob
-from aiida.orm import Dict
-from aiida.orm import RemoteData
+import io
+import os
+
+import six
 from aiida.common.datastructures import CalcInfo, CodeInfo
+from aiida.common.exceptions import InputValidationError, UniquenessError
 from aiida.common.utils import classproperty
-from aiida.common.exceptions import InputValidationError
-from aiida.common.exceptions import UniquenessError
+from aiida.engine import CalcJob
+from aiida.orm import Dict, RemoteData
 from aiida_fleur.calculation.fleur import FleurCalculation
 
 
