@@ -24,7 +24,7 @@
             "spex.spexparser = aiida_spex.parsers.spex:SpexParser"
         ],
         "aiida.workflows": [
-            "spex.gw = aiida_spex.workflows.gw:SpexGwWorkchain"
+            "spex.job = aiida_spex.workflows.job:SpexJobWorkchain"
         ]
     },
     "include_package_data": true,
