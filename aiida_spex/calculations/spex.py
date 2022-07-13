@@ -135,7 +135,7 @@ class SpexCalculation(CalcJob):
         # parser
         spec.input(
             "metadata.options.parser_name",
-            valid_type=six.string_types,
+            valid_type=str,
             default="spex.spexparser",
         )
 
