@@ -105,7 +105,6 @@ def spexout_parser(spexout_file):
     returns: a dictionary with the parsed data
     Parse SPEX output file and return a dictionary with the data.
     """
-    contents = spexout_file.read()
-    run_info = get_run_info(contents)
-    basic_info = get_basic_info(contents)
+    run_info = get_run_info(spexout_file)
+    basic_info = get_basic_info(spexout_file)
     return {**run_info, **basic_info}
