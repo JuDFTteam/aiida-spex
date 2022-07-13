@@ -24,7 +24,7 @@ from aiida.common import AttributeDict
 from aiida.engine import while_
 from aiida.plugins import CalculationFactory, DataFactory
 
-from aiida_spex.calculations.spex import SpexCalculation as SpexProcess
+from aiida_spex.calculations.spex import SpexCalculation
 from aiida_spex.common.workchain.base.restart import BaseRestartWorkChain
 from aiida_spex.common.workchain.utils import (ErrorHandlerReport,
                                                register_error_handler)
@@ -35,7 +35,7 @@ class SpexBaseWorkChain(BaseRestartWorkChain):
 
     _workflowversion = "0.1.1"
 
-    _calculation_class = SpexProcess
+    _calculation_class = SpexCalculation
 
     @classmethod
     def define(cls, spec):
@@ -98,6 +98,7 @@ class SpexBaseWorkChain(BaseRestartWorkChain):
         spec.output("retrieved", valid_type=orm.FolderData, required=False)
         spec.output("remote_folder", valid_type=orm.RemoteData, required=False)
         spec.output("final_calc_uuid", valid_type=orm.Str, required=False)
+        spec.expose_outputs(SpexCalculation)
 
         spec.exit_code(
             390,
@@ -176,7 +177,7 @@ def _handle_general_error(self, calculation):
     """
     Calculation failed for unknown reason.
     """
-    if calculation.exit_status in SpexProcess.get_exit_statuses(
+    if calculation.exit_status in SpexCalculation.get_exit_statuses(
         ["ERROR_SPEX_CALC_FAILED"]
     ):
         self.ctx.restart_calc = calculation
