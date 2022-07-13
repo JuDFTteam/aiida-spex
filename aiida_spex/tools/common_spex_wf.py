@@ -1,6 +1,6 @@
+from aiida.orm import Bool, Node, load_node
+from aiida.plugins import CalculationFactory, DataFactory
 
-from aiida.orm import Node, load_node, Bool
-from aiida.plugins import DataFactory, CalculationFactory
 
 def is_code(code):
     """
@@ -8,8 +8,9 @@ def is_code(code):
     if yes returns a Code node in all cases
     if no returns None
     """
+    from aiida.common.exceptions import (InputValidationError,
+                                         MultipleObjectsError, NotExistent)
     from aiida.orm import Code
-    from aiida.common.exceptions import NotExistent, MultipleObjectsError, InputValidationError
 
     if isinstance(code, Code):
         return code
@@ -39,13 +40,21 @@ def is_code(code):
         return None
 
 
-def get_inputs_spex(spexcode, remote, options, label='', description='', settings=None, params=None, serial=False, **kwargs):
-    '''
+def get_inputs_spex(
+    spexcode,
+    remote,
+    options,
+    label="",
+    description="",
+    settings=None,
+    params=None,
+    serial=False,
+):
+    """
     Assembles the input dictionary for Spex Calculation.
 
-    :param spexinp_parameters: layout of the spex.inp file
-    :param remote: remote_folder from the previous calculation of RemoteData type
     :param spexcode: spex code of Code type
+    :param remote: remote_folder from the previous calculation of RemoteData type
     :param options: calculation options that will be stored in metadata
     :param label: a string setting a label of the CalcJob in the DB
     :param description: a string setting a description of the CalcJob in the DB
@@ -57,50 +66,49 @@ def get_inputs_spex(spexcode, remote, options, label='', description='', setting
                                          description, params=params)
         future = self.submit(inputs_build)
 
-    '''
+    """
 
-    Dict = DataFactory('dict')
+    Dict = DataFactory("dict")
     inputs = {}
 
-    if remote:
-        inputs['parent_folder'] = remote
     if spexcode:
-        inputs['code'] = spexcode
-    if params:
-        inputs['parameters'] = params
-    if settings:
-        inputs['settings'] = settings
-
+        inputs["code"] = spexcode
+    if remote:
+        inputs["parent_folder"] = remote
     if description:
-        inputs['description'] = description
+        inputs["description"] = description
     else:
-        inputs['description'] = ''
+        inputs["description"] = ""
 
     if label:
-        inputs['label'] = label
+        inputs["label"] = label
     else:
-        inputs['label'] = ''
+        inputs["label"] = ""
+    if settings:
+        inputs["settings"] = settings
+    if params:
+        inputs["parameters"] = params
 
     if serial:
         if not options:
             options = {}
-        options['withmpi'] = False  # for now
+        options["withmpi"] = False  # for now
         # TODO not every machine/scheduler type takes number of machines
-        options['resources'] = {'num_machines': 1, 'num_mpiprocs_per_machine': 1}
+        options["resources"] = {"num_machines": 1, "num_mpiprocs_per_machine": 1}
     else:
-        options['withmpi'] = True
+        options["withmpi"] = True
 
-    custom_commands = options.get('custom_scheduler_commands', '')
-    options['custom_scheduler_commands'] = custom_commands
+    custom_commands = options.get("custom_scheduler_commands", "")
+    options["custom_scheduler_commands"] = custom_commands
 
     if settings:
         if isinstance(settings, Dict):
-            inputs['settings'] = settings
+            inputs["settings"] = settings
         else:
-            inputs['settings'] = Dict(dict=settings)
+            inputs["settings"] = Dict(dict=settings)
 
     if options:
-         inputs['options'] = Dict(dict=options)
+        inputs["options"] = Dict(dict=options)
 
     return inputs
 
@@ -119,6 +127,7 @@ def test_and_get_codenode(codenode, expected_code_type, use_exceptions=False):
     :return: a Code object
     """
     import sys
+
     from aiida.common.exceptions import NotExistent
     from aiida.orm import Code
 
@@ -130,15 +139,24 @@ def test_and_get_codenode(codenode, expected_code_type, use_exceptions=False):
             raise ValueError
     except ValueError as exc:
         from aiida.orm.querybuilder import QueryBuilder
-        qb = QueryBuilder()
-        qb.append(Code, filters={'attributes.input_plugin': {'==': expected_code_type}}, project='*')
 
-        valid_code_labels = ['{}@{}'.format(c.label, c.computer.name) for [c] in qb.all()]
+        qb = QueryBuilder()
+        qb.append(
+            Code,
+            filters={"attributes.input_plugin": {"==": expected_code_type}},
+            project="*",
+        )
+
+        valid_code_labels = [
+            "{}@{}".format(c.label, c.computer.name) for [c] in qb.all()
+        ]
 
         if valid_code_labels:
-            msg = ('Given Code node is not of expected code type.\n'
-                   'Valid labels for a {} executable are:\n'.format(expected_code_type))
-            msg += '\n'.join('* {}'.format(l) for l in valid_code_labels)
+            msg = (
+                "Given Code node is not of expected code type.\n"
+                "Valid labels for a {} executable are:\n".format(expected_code_type)
+            )
+            msg += "\n".join("* {}".format(l) for l in valid_code_labels)
 
             if use_exceptions:
                 raise ValueError(msg) from exc
@@ -146,9 +164,11 @@ def test_and_get_codenode(codenode, expected_code_type, use_exceptions=False):
                 print(msg)  # , file=sys.stderr)
                 sys.exit(1)
         else:
-            msg = ('Code not valid, and no valid codes for {}.\n'
-                   'Configure at least one first using\n'
-                   '    verdi code setup'.format(expected_code_type))
+            msg = (
+                "Code not valid, and no valid codes for {}.\n"
+                "Configure at least one first using\n"
+                "    verdi code setup".format(expected_code_type)
+            )
             if use_exceptions:
                 raise ValueError(msg) from exc
             else:
@@ -157,6 +177,7 @@ def test_and_get_codenode(codenode, expected_code_type, use_exceptions=False):
 
     return code
 
+
 def find_last_submitted_calcjob(restart_wc):
     """
     Finds the last CalcJob submitted in a higher-level workchain
@@ -164,6 +185,7 @@ def find_last_submitted_calcjob(restart_wc):
     """
     from aiida.common.exceptions import NotExistent
     from aiida.orm import CalcJobNode
+
     links = restart_wc.get_outgoing().all()
     calls = list([x for x in links if isinstance(x.node, CalcJobNode)])
     if calls:

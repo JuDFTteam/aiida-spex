@@ -14,7 +14,7 @@ This module contains the parser for a spex calculation and methods for
 parsing different files produced by inpgen.
 """
 from aiida.parsers import Parser
-from aiida.common.exceptions import NotExistent, InputValidationError, ValidationError
+from aiida.common.exceptions import NotExistent
 from aiida_spex.calculations.spex import SpexCalculation
 
 

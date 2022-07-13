@@ -29,7 +29,7 @@ from aiida_fleur.calculation.fleur import FleurCalculation
 class SpexCalculation(CalcJob):
     """
     Given a DFT result node(or RemoteData), This calculation will retrive and modify the necessary
-    files for a SPEX calculation. Prepare and adapt the retrive list and create a  
+    files for a SPEX calculation. Prepare and adapt the retrive list and create a
     CalcInfo object for the ExecManager of aiida.
     NOTE: RemoteData or DFT result node must be a result of SPEX workflow implemented in the aiida-fleur plugin
     """
@@ -73,9 +73,16 @@ class SpexCalculation(CalcJob):
     # If a parent calculation exists, other files will be copied remotely when required
     #######
 
-    _copy_filelist_job_remote = [_OUTXML_FILE_NAME, _INPXML_FILE_NAME, _CDN_HDF5_FILE_NAME, _BASIS_FILE_NAME, _POT_FILE_NAME, _ECORE_FILE]
-    
-    _copy_filelist1 = [ _INPUT_FILE_NAME, _ENPARA_FILE_NAME]
+    _copy_filelist_job_remote = [
+        _OUTXML_FILE_NAME,
+        _INPXML_FILE_NAME,
+        _CDN_HDF5_FILE_NAME,
+        _BASIS_FILE_NAME,
+        _POT_FILE_NAME,
+        _ECORE_FILE,
+    ]
+
+    _copy_filelist1 = [_INPUT_FILE_NAME, _ENPARA_FILE_NAME]
 
     # possible settings_dict keys
     _settings_keys = [
@@ -107,9 +114,14 @@ class SpexCalculation(CalcJob):
             "needed files for a SPEX calc, only edited files should be "
             "uploaded from the repository.",
         )
-        spec.input('parameters', valid_type=six.string_types,required=False,
-                   non_db=True,help='Calculation parameters.')
-                   
+        spec.input(
+            "parameters",
+            valid_type=six.string_types,
+            required=False,
+            non_db=True,
+            help="Calculation parameters.",
+        )
+
         spec.input(
             "settings",
             valid_type=Dict,
@@ -199,8 +211,7 @@ class SpexCalculation(CalcJob):
             )
         else:
             # extract parent calculation
-            parent_calcs = parent_calc_folder.get_incoming(
-                node_class=CalcJob).all()
+            parent_calcs = parent_calc_folder.get_incoming(node_class=CalcJob).all()
             n_parents = len(parent_calcs)
             if n_parents != 1:
                 raise UniquenessError(
@@ -223,8 +234,7 @@ class SpexCalculation(CalcJob):
                     # don't copy files, copy files locally
                     copy_remotely = False
             else:
-                raise InputValidationError(
-                    "parent_calc, must be a 'fleur calculation'")
+                raise InputValidationError("parent_calc, must be a 'fleur calculation'")
 
         # check existence of settings (optional)
         if "settings" in self.inputs:
@@ -246,14 +256,14 @@ class SpexCalculation(CalcJob):
                     "".format(key, self._settings_keys)
                 )
 
-        if 'parameters' in self.inputs:
+        if "parameters" in self.inputs:
             input_parameters = self.inputs.parameters
-        elif 'raw_parameters' in self.inputs:
-            # Raw parameters won't provide parameter validation
-            input_parameters = self.inputs.raw_parameters
         else:
             # TODO: raise error if no parameters given, but for now use a general raw parameter
-            input_parameters ="BZ 4 4 4\nJOB GW 1:(4-12)\nNBAND 80\nITERATE\n"
+            raise InputValidationError(
+                "Input parameters, must be parameters of a valid 'spex inp'"
+            )
+            # input_parameters ="BZ 4 4 4\nJOB GW 1:(4-12)\nNBAND 80\nITERATE\n"
 
         if has_parent:
             # copy necessary files
@@ -281,21 +291,18 @@ class SpexCalculation(CalcJob):
                     remote_copy_list.append(
                         (
                             parent_calc_folder.computer.uuid,
-                            os.path.join(
-                                parent_calc_folder.get_remote_path(), file1),
+                            os.path.join(parent_calc_folder.get_remote_path(), file1),
                             self._get_output_folder,
                         )
                     )
 
-                self.logger.info(
-                    "remote copy file list {}".format(remote_copy_list))
-
+                self.logger.info("remote copy file list {}".format(remote_copy_list))
 
         input_filename = folder.get_abs_path(self._INPUT_FILE_NAME)
-        
-        with open(input_filename, 'w') as infile:
+
+        with open(input_filename, "w") as infile:
             # Should there be a title to identify the input?
-            infile.write('{}'.format(input_parameters))
+            infile.write("{}".format(input_parameters))
 
         ########## MAKE CALCINFO ###########
 
