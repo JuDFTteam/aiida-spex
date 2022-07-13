@@ -72,19 +72,20 @@ def get_unitcell_info(contents):
         re.compile(r'#\s+Ty\s+El\s+Coord.\s*((\s*.*){'+number_of_centers+r'})'),
         re.compile(r'Number of symmetry operations\s*=\s*(\d+)'),
         re.compile(r'Number of valence electrons:\s*(\d+)'),
-        re.compile(r'K points in path:\s+((.+\n)*)'),
         re.compile(r'Number of k points:\s+(\d+)'),
         re.compile(r'in IBZ:\s+(\d+)'),
-        re.compile(r'List of k points\s+((.+\n)*)')
+        # The following are specific to KPTPATH keyword
+        # re.compile(r'K points in path:\s+((.+\n)*)'),
+        # re.compile(r'List of k points\s+((.+\n)*)')
     ]
     unitcell_info = {
         'unitcell_geometry':None,
         'number_of_symmetry_operations':None,
         'number_of_valence_electrons':None,
-        'k_points_in_path':None,
         'number_of_k_points':None,
         'number_of_k_points_in_ibz':None,
-        'list_of_k_points':None,
+        # 'k_points_in_path':None,
+        # 'list_of_k_points':None,
     }
 
     for key, pattern in zip(unitcell_info.keys(),unitcell_patterns):
@@ -93,8 +94,8 @@ def get_unitcell_info(contents):
             unitcell_info[key]= re.sub(' +|\n',' ' ,match.group(1).strip())
     
     unitcell_info['unitcell_geometry'] = np.array(unitcell_info['unitcell_geometry'].split()).reshape(-1,6)
-    unitcell_info['k_points_in_path'] = np.array(unitcell_info['k_points_in_path'].split()).reshape(-1,3)
-    unitcell_info['list_of_k_points'] = np.array(unitcell_info['list_of_k_points'].split()).reshape(-1,4)
+    # unitcell_info['k_points_in_path'] = np.array(unitcell_info['k_points_in_path'].split()).reshape(-1,3)
+    # unitcell_info['list_of_k_points'] = np.array(unitcell_info['list_of_k_points'].split()).reshape(-1,4)
     return unitcell_info
 
 
@@ -107,4 +108,5 @@ def spexout_parser(spexout_file):
     """
     run_info = get_run_info(spexout_file)
     basic_info = get_basic_info(spexout_file)
-    return {**run_info, **basic_info}
+    unitcell_info = get_unitcell_info(spexout_file)
+    return {**run_info, **basic_info, **unitcell_info}
