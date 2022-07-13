@@ -46,7 +46,7 @@ class SpexJobWorkChain(WorkChain):
     :param remote_data: (RemoteData), from a Fleur calculation
     :param spex: (Code)
 
-    :return: output_job_wc_para (Dict), Information of workflow results
+    :return: output_spexjob_wc_para (Dict), Information of workflow results
         like Success, last result node, list with convergence behavior
     """
 
@@ -78,8 +78,9 @@ class SpexJobWorkChain(WorkChain):
         spec.input("settings", valid_type=Dict, required=False)
         spec.outline(cls.start, cls.validate_input, cls.run_spex, cls.return_results)
 
-        spec.output("output_job_wc_para", valid_type=Dict)
+        spec.output("output_spexjob_wc_para", valid_type=Dict)
         spec.output("last_spex_calc_output", valid_type=Dict)
+        spec.expose_outputs(SpexBaseWorkChain, namespace='last_calc')
 
         spec.exit_code(
             230, "ERROR_INVALID_INPUT_PARAM", message="Invalid workchain parameters."
@@ -241,11 +242,11 @@ class SpexJobWorkChain(WorkChain):
             if self.ctx.abort:  # some error occurred, do not use the output.
                 self.report(
                     "STATUS/ERROR: I abort, see logs and "
-                    "errors/warning/hints in output_job_wc_para"
+                    "errors/warning/hints in output_spexjob_wc_para"
                 )
 
         outputnode_t = Dict(dict=outputnode_dict)
-        # this is unsafe so far, because last_calc_out could not exist...
+        # what hapens if last_calc_out doesnt exist...
         if last_calc_out:
             outdict = create_spexjob_result_node(
                 outpara=outputnode_t,
@@ -257,8 +258,11 @@ class SpexJobWorkChain(WorkChain):
 
         if last_calc_out:
             outdict["last_spex_calc_output"] = last_calc_out
+        
+        if self.ctx.last_base_wc:
+            self.out_many(self.exposed_outputs(self.ctx.last_base_wc, SpexBaseWorkChain, namespace='last_calc'))
 
-        # outdict['output_job_wc_para'] = outputnode
+        # outdict['output_spexjob_wc_para'] = outputnode
         for link_name, node in six.iteritems(outdict):
             self.out(link_name, node)
 
@@ -288,8 +292,8 @@ def create_spexjob_result_node(**kwargs):
             outpara = val
     outdict = {}
     outputnode = outpara.clone()
-    outputnode.label = "output_job_wc_para"
+    outputnode.label = "output_spexjob_wc_para"
     outputnode.description = "Contains results and information of an spex_job_wc run."
 
-    outdict["output_job_wc_para"] = outputnode
+    outdict["output_spexjob_wc_para"] = outputnode
     return outdict
