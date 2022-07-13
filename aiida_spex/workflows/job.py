@@ -247,13 +247,13 @@ class SpexJobWorkChain(WorkChain):
         outputnode_t = Dict(dict=outputnode_dict)
         # this is unsafe so far, because last_calc_out could not exist...
         if last_calc_out:
-            outdict = create_job_result_node(
+            outdict = create_spexjob_result_node(
                 outpara=outputnode_t,
                 last_calc_out=last_calc_out,
                 last_calc_retrieved=retrieved,
             )
         else:
-            outdict = create_job_result_node(outpara=outputnode_t)
+            outdict = create_spexjob_result_node(outpara=outputnode_t)
 
         if last_calc_out:
             outdict["last_spex_calc_output"] = last_calc_out
@@ -275,7 +275,7 @@ class SpexJobWorkChain(WorkChain):
 
 
 @cf
-def create_job_result_node(**kwargs):
+def create_spexjob_result_node(**kwargs):
     """
     This is a pseudo wf, to create the right graph structure of AiiDA.
     This wokfunction will create the output node in the database.
