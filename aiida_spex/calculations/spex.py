@@ -47,7 +47,7 @@ class SpexCalculation(CalcJob):
     _INPXML_FILE_NAME = "inp.xml"
     _SYMXML_FILE_NAME = "sym.xml"
     _ENPARA_FILE_NAME = "enpara"
-    # _SYMOUT_FILE_NAME = "sym.out"
+    # _SYMOUT_FILE_NAME = "sym.out" #depricated since MaX_R5 version of the fleur
     _CDN_HDF5_FILE_NAME = "cdn.hdf"
     _BASIS_FILE_NAME = "basis.hdf"
     _POT_FILE_NAME = "pot.hdf"
