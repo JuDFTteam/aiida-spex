@@ -234,7 +234,7 @@ class SpexCalculation(CalcJob):
                     # don't copy files, copy files locally
                     copy_remotely = False
             else:
-                raise InputValidationError("parent_calc, must be a 'fleur calculation'")
+                raise InputValidationError("parent_calc, must be a 'fleur calculation' or a 'spex calculation(RESTART)'")
 
         # check existence of settings (optional)
         if "settings" in self.inputs:
@@ -263,7 +263,6 @@ class SpexCalculation(CalcJob):
             raise InputValidationError(
                 "Input parameters, must be parameters of a valid 'spex inp'"
             )
-            # input_parameters ="BZ 4 4 4\nJOB GW 1:(4-12)\nNBAND 80\nITERATE\n"
 
         if has_parent:
             # copy necessary files
@@ -302,6 +301,7 @@ class SpexCalculation(CalcJob):
 
         with open(input_filename, "w") as infile:
             # Should there be a title to identify the input?
+            # A version number? perhaps
             infile.write("{}".format(input_parameters))
 
         ########## MAKE CALCINFO ###########
