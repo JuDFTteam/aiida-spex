@@ -43,6 +43,7 @@ class SpexCalculation(CalcJob):
     _INPUT_FILE_NAME = "spex.inp"
 
     # Files needed for the SPEX calculation
+    
     _OUTXML_FILE_NAME = "out.xml"
     _INPXML_FILE_NAME = "inp.xml"
     _SYMXML_FILE_NAME = "sym.xml"
