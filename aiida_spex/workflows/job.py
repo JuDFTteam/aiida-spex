@@ -81,7 +81,7 @@ class SpexJobWorkChain(WorkChain):
 
         spec.output("output_spexjob_wc_para", valid_type=Dict)
         spec.output("last_spex_calc_output", valid_type=Dict)
-        spec.expose_outputs(SpexBaseWorkChain, namespace='last_calc')
+        spec.expose_outputs(SpexBaseWorkChain, namespace="last_calc")
 
         spec.exit_code(
             230, "ERROR_INVALID_INPUT_PARAM", message="Invalid workchain parameters."
@@ -256,9 +256,13 @@ class SpexJobWorkChain(WorkChain):
 
         if last_calc_out:
             outdict["last_spex_calc_output"] = last_calc_out
-        
+
         if self.ctx.last_base_wc:
-            self.out_many(self.exposed_outputs(self.ctx.last_base_wc, SpexBaseWorkChain, namespace='last_calc'))
+            self.out_many(
+                self.exposed_outputs(
+                    self.ctx.last_base_wc, SpexBaseWorkChain, namespace="last_calc"
+                )
+            )
 
         # outdict['output_spexjob_wc_para'] = outputnode
         for link_name, node in six.iteritems(outdict):

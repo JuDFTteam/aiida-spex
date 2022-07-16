@@ -7,7 +7,7 @@ from functools import wraps
 
 from aiida.engine import ExitCode
 
-ErrorHandler = namedtuple('ErrorHandler', 'priority method')
+ErrorHandler = namedtuple("ErrorHandler", "priority method")
 """
 A namedtuple to define an error handler for a :class:`~aiida.engine.processes.workchains.workchain.WorkChain`.
 
@@ -20,7 +20,7 @@ as its sole argument. If the condition of the error handler is met, it should re
 :param method: the workchain class method
 """
 
-ErrorHandlerReport = namedtuple('ErrorHandlerReport', 'is_handled do_break exit_code')
+ErrorHandlerReport = namedtuple("ErrorHandlerReport", "is_handled do_break exit_code")
 ErrorHandlerReport.__new__.__defaults__ = (False, False, ExitCode())
 """
 A namedtuple to define an error handler report for a :class:`~aiida.engine.processes.workchains.workchain.WorkChain`.
@@ -70,15 +70,19 @@ def register_error_handler(cls, priority):
         @wraps(handler)
         def error_handler(self, calculation):
             """Wrapped error handler to add a log to the report if the handler is called and verbosity is turned on."""
-            if hasattr(cls, '_verbose') and cls._verbose:  # pylint: disable=protected-access
-                self.report('({}){}'.format(priority, handler.__name__))
+            if (
+                hasattr(cls, "_verbose") and cls._verbose
+            ):  # pylint: disable=protected-access
+                self.report("({}){}".format(priority, handler.__name__))
             return handler(self, calculation)
 
         setattr(cls, handler.__name__, error_handler)
 
-        if not hasattr(cls, '_error_handlers'):
+        if not hasattr(cls, "_error_handlers"):
             cls._error_handlers = []  # pylint: disable=protected-access
-        cls._error_handlers.append(ErrorHandler(priority, error_handler))  # pylint: disable=protected-access
+        cls._error_handlers.append(
+            ErrorHandler(priority, error_handler)
+        )  # pylint: disable=protected-access
 
         return error_handler
 

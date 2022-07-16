@@ -12,10 +12,11 @@ def cartesian_to_internal(coordinate_vectors, bravais_matrix):
         result.append(np.inner(bravais_matrix, coordinate_vector))
     return result
 
+
 def internal_to_cartesian(coordinate_vectors, bravais_matrix):
     result = []
     for coordinate_vector in coordinate_vectors:
-        result.append(np.dot(coordinate_vector,bravais_matrix))
+        result.append(np.dot(coordinate_vector, bravais_matrix))
     return result
 
 
@@ -65,4 +66,5 @@ if __name__ == "__main__":
     print("Relaxed Positions:")
     cartesian_to_internal(cartesian_coordinates2, inverse(bravais_matrix))
     import subprocess
+
     subprocess.run(["which", "python"])

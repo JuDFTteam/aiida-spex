@@ -41,7 +41,7 @@ class SpexCalculation(CalcJob):
     _INPUT_FILE_NAME_NAME = "spex.inp"
 
     # Files needed for the SPEX calculation
-    
+
     _OUTXML_FILE_NAME = "out.xml"
     _INPXML_FILE_NAME = "inp.xml"
     _SYMXML_FILE_NAME = "sym.xml"
@@ -67,12 +67,12 @@ class SpexCalculation(CalcJob):
 
     # RESTART files
     _RESTART_FILE_NAMES = [
-        "spex.uwan", 
-        "spex.kolap", 
-        "spex.sigx", 
-        "spex.sigx.[0-9]+", 
-        "spex.sigc", 
-        "spex.sigc.[0-9]+", 
+        "spex.uwan",
+        "spex.kolap",
+        "spex.sigx",
+        "spex.sigx.[0-9]+",
+        "spex.sigc",
+        "spex.sigc.[0-9]+",
         "spex.sigt",
         "spex.sigt.[0-9]+",
         "spex.wcou",
@@ -87,7 +87,7 @@ class SpexCalculation(CalcJob):
         "spex.core",
         "spex.core.[0-9]+",
         "eig_gw.hdf",
-        ]
+    ]
 
     # POLICY
     # We will store everything needed for a further run in the local repository
@@ -253,7 +253,9 @@ class SpexCalculation(CalcJob):
                     # don't copy files, copy files locally
                     copy_remotely = False
             else:
-                raise InputValidationError("parent_calc, must be a 'fleur calculation' or a 'spex calculation(RESTART)'")
+                raise InputValidationError(
+                    "parent_calc, must be a 'fleur calculation' or a 'spex calculation(RESTART)'"
+                )
 
         # check existence of settings (optional)
         if "settings" in self.inputs:

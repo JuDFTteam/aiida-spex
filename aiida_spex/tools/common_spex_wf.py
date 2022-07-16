@@ -8,8 +8,11 @@ def is_code(code):
     if yes returns a Code node in all cases
     if no returns None
     """
-    from aiida.common.exceptions import (InputValidationError,
-                                         MultipleObjectsError, NotExistent)
+    from aiida.common.exceptions import (
+        InputValidationError,
+        MultipleObjectsError,
+        NotExistent,
+    )
     from aiida.orm import Code
 
     if isinstance(code, Code):
