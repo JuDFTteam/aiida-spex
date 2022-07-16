@@ -26,7 +26,7 @@ from aiida.plugins import CalculationFactory, DataFactory
 
 from aiida_spex.calculations.spex import SpexCalculation
 from aiida_spex.common.workchain.base.restart import BaseRestartWorkChain
-from aiida_spex.common.workchain.utils import (ErrorHandlerReport,
+from aiida_spex.common.workchain.spex_utils import (ErrorHandlerReport,
                                                register_error_handler)
 from aiida_spex.tools.spexinp_utils import check_parameters
 

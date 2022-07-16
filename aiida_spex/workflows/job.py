@@ -10,7 +10,7 @@
 ###############################################################################
 
 """
-In this module you find the workchain 'SpexJobWorkChain' for the self-consistency
+In this module you find the workchain 'SpexJobWorkChain' for the JOB
 cycle management of a SPEX calculation with AiiDA.
 """
 
