@@ -12,6 +12,9 @@
 """
 In this module you find the workchain 'SpexJobWorkChain' for the JOB
 cycle management of a SPEX calculation with AiiDA.
+NOTICE: inorder to avoid large amount of data transfer for upload and dowload ...
+... all necessary files for the calculation and restart are kept on the remote machine. ...
+... Therefore is is adviced to do the calculation in the same remote machine. 
 """
 
 from __future__ import absolute_import
@@ -167,9 +170,6 @@ class SpexJobWorkChain(WorkChain):
         else:
             remote = None
 
-        # This should move to validation
-        # if 'calc_parameters' in self.inputs:
-        #     params = self.inputs.calc_parameters
         if "parameters" in self.inputs:
             params = self.inputs.parameters
         else:

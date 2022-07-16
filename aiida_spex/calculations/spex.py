@@ -36,12 +36,9 @@ class SpexCalculation(CalcJob):
     """
 
     # Default input and output files
-    _INPUT_FILE = "spex.inp"
-    _OUTPUT_FILE = "spex.out"
-
     # these will be shown in AiiDA
-    _OUTPUT_FILE_NAME = "spex.out"
-    _INPUT_FILE_NAME = "spex.inp"
+    _OUTPUT_FILE_NAME_NAME = "spex.out"
+    _INPUT_FILE_NAME_NAME = "spex.inp"
 
     # Files needed for the SPEX calculation
     
@@ -68,6 +65,30 @@ class SpexCalculation(CalcJob):
     # relax (geometry optimization) files
     _RELAX_FILE_NAME = "relax.xml"
 
+    # RESTART files
+    _RESTART_FILE_NAMES = [
+        "spex.uwan", 
+        "spex.kolap", 
+        "spex.sigx", 
+        "spex.sigx.[0-9]+", 
+        "spex.sigc", 
+        "spex.sigc.[0-9]+", 
+        "spex.sigt",
+        "spex.sigt.[0-9]+",
+        "spex.wcou",
+        "spex.wcou.[0-9]+",
+        "spex.cor",
+        "spex.cor.[0-9]+",
+        "spex.cot",
+        "spex.cot.[0-9]+",
+        "spex.ccou",
+        "spex.ccou.[0-9]+",
+        "spex.mb",
+        "spex.core",
+        "spex.core.[0-9]+",
+        "eig_gw.hdf",
+        ]
+
     # POLICY
     # We will store everything needed for a further run in the local repository
     # (required files from FLEUR+SPEX), also all important results files.
@@ -84,7 +105,7 @@ class SpexCalculation(CalcJob):
         _ECORE_FILE,
     ]
 
-    _copy_filelist1 = [_INPUT_FILE_NAME, _ENPARA_FILE_NAME]
+    _copy_filelist1 = [_INPUT_FILE_NAME_NAME, _ENPARA_FILE_NAME]
 
     # possible settings_dict keys
     _settings_keys = [
@@ -99,12 +120,10 @@ class SpexCalculation(CalcJob):
     def define(cls, spec):
         super(SpexCalculation, cls).define(spec)
 
-        # spec.input('metadata.options.input_filename', valid_type=six.string_types,
-        #            default=cls._INPXML_FILE_NAME)
         spec.input(
             "metadata.options.output_filename",
             valid_type=six.string_types,
-            default=cls._OUTPUT_FILE_NAME,
+            default=cls._OUTPUT_FILE_NAME_NAME,
         )
         # inputs
         spec.input(
@@ -224,7 +243,6 @@ class SpexCalculation(CalcJob):
             parent_calc_class = parent_calc.process_class
             has_parent = True
 
-            # if inpgen calc do
             # check if folder from db given, or get folder from rep.
             # Parent calc does not has to be on the same computer.
 
@@ -298,7 +316,7 @@ class SpexCalculation(CalcJob):
 
                 self.logger.info("remote copy file list {}".format(remote_copy_list))
 
-        input_filename = folder.get_abs_path(self._INPUT_FILE_NAME)
+        input_filename = folder.get_abs_path(self._INPUT_FILE_NAME_NAME)
 
         with open(input_filename, "w") as infile:
             # Should there be a title to identify the input?
@@ -313,7 +331,7 @@ class SpexCalculation(CalcJob):
         # Empty command line by default
         # cmdline_params = settings_dict.pop('CMDLINE', [])
         # calcinfo.cmdline_params = (list(cmdline_params)
-        #                           + ["-in", self._INPUT_FILE_NAME])
+        #                           + ["-in", self._INPUT_FILE_NAME_NAME])
 
         self.logger.info("local copy file list {}".format(local_copy_list))
 
@@ -323,8 +341,8 @@ class SpexCalculation(CalcJob):
 
         # Retrieve by default the output file and the xml file
         retrieve_list = []
-        retrieve_list.append(self._INPUT_FILE_NAME)
-        retrieve_list.append(self._OUTPUT_FILE_NAME)
+        retrieve_list.append(self._INPUT_FILE_NAME_NAME)
+        retrieve_list.append(self._OUTPUT_FILE_NAME_NAME)
         retrieve_list.append(self._OUTXML_FILE_NAME)
         retrieve_list.append(self._INPXML_FILE_NAME)
         retrieve_list.append(self._ERROR_FILE_NAME)
@@ -366,8 +384,8 @@ class SpexCalculation(CalcJob):
 
         codeinfo.code_uuid = code.uuid
         codeinfo.withmpi = self.node.get_attribute("max_wallclock_seconds")
-        codeinfo.stdin_name = self._INPUT_FILE_NAME
-        codeinfo.stdout_name = self._OUTPUT_FILE_NAME
+        codeinfo.stdin_name = self._INPUT_FILE_NAME_NAME
+        codeinfo.stdout_name = self._OUTPUT_FILE_NAME_NAME
         # codeinfo.join_files = True
         codeinfo.stderr_name = self._ERROR_FILE_NAME
 

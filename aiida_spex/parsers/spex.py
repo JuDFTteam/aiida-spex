@@ -56,8 +56,8 @@ class SpexParser(Parser):
 
         self.logger.info("SpexData initialized")
 
-        if SpexCalculation._OUTPUT_FILE not in list_of_files:
-            self.logger.error(f"SPEX out not found '{SpexCalculation._OUTPUT_FILE}'")
+        if SpexCalculation._OUTPUT_FILE_NAME not in list_of_files:
+            self.logger.error(f"SPEX out not found '{SpexCalculation._OUTPUT_FILE_NAME}'")
             has_spex_outfile = False  # Return after the error lines were processed
         else:
             has_spex_outfile = True
@@ -91,7 +91,7 @@ class SpexParser(Parser):
                     # self.logger.info(f"SPEX info: {spex_info}")
 
 
-        with output_folder.open(SpexCalculation._OUTPUT_FILE_NAME, 'r') as spexout_opened:
+        with output_folder.open(SpexCalculation._OUTPUT_FILE_NAME_NAME, 'r') as spexout_opened:
             success = True
             parser_info = {}
             try:
