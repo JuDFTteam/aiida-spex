@@ -24,6 +24,7 @@ from aiida.common.utils import classproperty
 from aiida.engine import CalcJob
 from aiida.orm import Dict, RemoteData
 from aiida_fleur.calculation.fleur import FleurCalculation
+from aiida_spex.tools.spexinp_utils import make_spex_inp
 
 
 class SpexCalculation(CalcJob):
@@ -43,6 +44,7 @@ class SpexCalculation(CalcJob):
     _INPUT_FILE_NAME = "spex.inp"
 
     # Files needed for the SPEX calculation
+    
     _OUTXML_FILE_NAME = "out.xml"
     _INPXML_FILE_NAME = "inp.xml"
     _SYMXML_FILE_NAME = "sym.xml"
@@ -116,9 +118,8 @@ class SpexCalculation(CalcJob):
         )
         spec.input(
             "parameters",
-            valid_type=six.string_types,
+            valid_type=Dict,
             required=False,
-            non_db=True,
             help="Calculation parameters.",
         )
 
@@ -234,7 +235,7 @@ class SpexCalculation(CalcJob):
                     # don't copy files, copy files locally
                     copy_remotely = False
             else:
-                raise InputValidationError("parent_calc, must be a 'fleur calculation'")
+                raise InputValidationError("parent_calc, must be a 'fleur calculation' or a 'spex calculation(RESTART)'")
 
         # check existence of settings (optional)
         if "settings" in self.inputs:
@@ -263,7 +264,6 @@ class SpexCalculation(CalcJob):
             raise InputValidationError(
                 "Input parameters, must be parameters of a valid 'spex inp'"
             )
-            # input_parameters ="BZ 4 4 4\nJOB GW 1:(4-12)\nNBAND 80\nITERATE\n"
 
         if has_parent:
             # copy necessary files
@@ -302,7 +302,8 @@ class SpexCalculation(CalcJob):
 
         with open(input_filename, "w") as infile:
             # Should there be a title to identify the input?
-            infile.write("{}".format(input_parameters))
+            # A version number? perhaps
+            infile.write("{}".format(make_spex_inp(input_parameters.get_dict())))
 
         ########## MAKE CALCINFO ###########
 

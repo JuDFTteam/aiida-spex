@@ -28,6 +28,7 @@ from aiida_spex.calculations.spex import SpexCalculation
 from aiida_spex.common.workchain.base.restart import BaseRestartWorkChain
 from aiida_spex.common.workchain.utils import (ErrorHandlerReport,
                                                register_error_handler)
+from aiida_spex.tools.spexinp_utils import check_parameters
 
 
 class SpexBaseWorkChain(BaseRestartWorkChain):
@@ -49,9 +50,8 @@ class SpexBaseWorkChain(BaseRestartWorkChain):
         )
         spec.input(
             "parameters",
-            valid_type=six.string_types,
+            valid_type=orm.Dict,
             required=False,
-            non_db=True,
             help="Calculation parameters.",
         )
 
@@ -102,8 +102,8 @@ class SpexBaseWorkChain(BaseRestartWorkChain):
 
         spec.exit_code(
             390,
-            "ERROR_NOT_OPTIMAL_RESOURCES",
-            message="Computational resources are not optimal.",
+            "ERROR_INVALID_PARAMETERS",
+            message="The input parameters are invalid.",
         )
 
     def validate_inputs(self):
@@ -138,9 +138,11 @@ class SpexBaseWorkChain(BaseRestartWorkChain):
             self.ctx.inputs.settings = {}
 
         if "parameters" in self.inputs:
-            self.ctx.inputs.parameters = self.inputs.parameters
-        else:
-            self.ctx.inputs.parameters = ""
+            isvalid = check_parameters(self.inputs.parameters.get_dict())
+            if not isvalid:
+                self.exit_codes.ERROR_INVALID_PARAMETERS
+            else:
+                self.ctx.inputs.parameters = self.inputs.parameters.get_dict()
 
         if not self.ctx.optimize_resources:
             self.ctx.can_be_optimised = (

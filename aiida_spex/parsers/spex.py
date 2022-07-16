@@ -18,7 +18,8 @@ from aiida.orm import Dict
 from aiida.common.exceptions import NotExistent
 from aiida_spex.calculations.spex import SpexCalculation
 
-from aiida_spex.tools.io import spexout_parser
+from aiida_spex.tools.spex_io import spexout_parser
+import re
 
 
 class SpexParser(Parser):
@@ -76,6 +77,18 @@ class SpexParser(Parser):
             except OSError:
                 self.logger.error(f'Failed to open error file: {errorfile}.')
                 return self.exit_codes.ERROR_OPENING_OUTPUTS
+            if error_file_lines:
+                # spex_warnings=re.findall(r'SPEX-WARNING.*', error_file_lines)
+                spex_error = re.findall(r'SPEX-ERROR.*', error_file_lines)
+                # spex_info = re.findall(r'SPEX-INFO.*', error_file_lines)
+
+                # if spex_warnings:
+                    # self.logger.warning(f"SPEX warnings: {spex_warnings}")
+                if spex_error:
+                    self.logger.error(f"SPEX error: {spex_error}")
+                    return self.exit_codes.ERROR_SPEX_CALC_FAILED
+                # if spex_info:
+                    # self.logger.info(f"SPEX info: {spex_info}")
 
 
         with output_folder.open(SpexCalculation._OUTPUT_FILE_NAME, 'r') as spexout_opened:
@@ -84,7 +97,7 @@ class SpexParser(Parser):
             try:
                 out_dict = spexout_parser(spexout_opened.read())
             except (ValueError, FileNotFoundError, KeyError) as exc:
-                self.logger.error(f'XML output parsing failed: {str(exc)}')
+                self.logger.error(f'output parsing failed: {str(exc)}')
                 success = False
         
         # Call routines for output node creation

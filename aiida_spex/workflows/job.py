@@ -50,7 +50,7 @@ class SpexJobWorkChain(WorkChain):
         like Success, last result node, list with convergence behavior
     """
 
-    _workflowversion = "0.1.0"
+    _workflowversion = "1.0.0"
     _default_wf_para = {"spex_runmax": 1}
 
     _default_options = {
@@ -70,9 +70,7 @@ class SpexJobWorkChain(WorkChain):
         spec.input("wf_parameters", valid_type=Dict, required=False)
 
         # spec.input('calc_parameters', valid_type=Dict, required=False)
-        spec.input(
-            "parameters", valid_type=six.string_types, non_db=True, required=False
-        )
+        spec.input("parameters", valid_type=Dict, required=False)
         spec.input("remote_data", valid_type=RemoteData, required=False)
 
         spec.input("settings", valid_type=Dict, required=False)

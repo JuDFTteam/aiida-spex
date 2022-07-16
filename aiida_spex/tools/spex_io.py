@@ -61,6 +61,11 @@ def get_basic_info(contents):
             basic_info[key]= re.sub(' +|\n',' ' ,match.group(1).strip())
     basic_info['primitive_vectors'] = np.array(basic_info['primitive_vectors'].split(),dtype=float).reshape(3,3)
     basic_info['reciprocal_vectors'] = np.array(basic_info['reciprocal_vectors'].split(),dtype=float).reshape(3,3)
+    basic_info['number_of_spins'] = int(basic_info['number_of_spins'])
+    basic_info['number_of_centers'] = int(basic_info['number_of_centers'])
+    basic_info['number_of_types'] = int(basic_info['number_of_types'])
+    basic_info['unit_cell_volume'] = float(basic_info['unit_cell_volume'])
+    basic_info['reciprocal_volume'] = float(basic_info['reciprocal_volume'])
     return basic_info
 
 def get_unitcell_info(contents):
@@ -94,6 +99,11 @@ def get_unitcell_info(contents):
             unitcell_info[key]= re.sub(' +|\n',' ' ,match.group(1).strip())
     
     unitcell_info['unitcell_geometry'] = np.array(unitcell_info['unitcell_geometry'].split()).reshape(-1,6)
+    unitcell_info['number_of_symmetry_operations'] = int(unitcell_info['number_of_symmetry_operations'])
+    unitcell_info['number_of_valence_electrons'] = int(unitcell_info['number_of_valence_electrons'])
+    unitcell_info['number_of_k_points'] = int(unitcell_info['number_of_k_points'])
+    unitcell_info['number_of_k_points_in_ibz'] = int(unitcell_info['number_of_k_points_in_ibz'])
+
     # unitcell_info['k_points_in_path'] = np.array(unitcell_info['k_points_in_path'].split()).reshape(-1,3)
     # unitcell_info['list_of_k_points'] = np.array(unitcell_info['list_of_k_points'].split()).reshape(-1,4)
     return unitcell_info
