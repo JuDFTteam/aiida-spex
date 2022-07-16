@@ -36,7 +36,7 @@ from aiida_spex.tools.spexinp_utils import check_parameters
 class SpexBaseWorkChain(BaseRestartWorkChain):
     """Workchain to run a SPEX calculation with automated error handling and restarts"""
 
-    _workflowversion = "1.0.0"
+    _workflowversion = "1.0.2"
 
     _calculation_class = SpexCalculation
 
