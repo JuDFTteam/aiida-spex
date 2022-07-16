@@ -33,6 +33,7 @@ from aiida_spex.tools.common_spex_wf import (
     test_and_get_codenode,
 )
 from aiida_spex.workflows.base_spex import SpexBaseWorkChain
+from aiida_spex.tools.spex_io import get_err_info
 
 
 class SpexJobWorkChain(WorkChain):
@@ -78,7 +79,14 @@ class SpexJobWorkChain(WorkChain):
         spec.input("remote_data", valid_type=RemoteData, required=False)
 
         spec.input("settings", valid_type=Dict, required=False)
-        spec.outline(cls.start, cls.validate_input, cls.run_spex, cls.return_results)
+        spec.outline(
+            cls.start,
+            cls.validate_input,
+            cls.run_spex,
+            cls.inspect_spex,
+            cls.get_res,
+            cls.return_results,
+        )
 
         spec.output("output_spexjob_wc_para", valid_type=Dict)
         spec.output("last_spex_calc_output", valid_type=Dict)
@@ -103,6 +111,14 @@ class SpexJobWorkChain(WorkChain):
         self.ctx.loop_count = 0
         self.ctx.calcs = []
         self.ctx.abort = False
+
+        # return para/vars
+        self.ctx.parse_last = True
+        self.ctx.successful = True
+        self.ctx.total_wall_time = 0
+        self.ctx.warnings = []
+        self.ctx.errors = []
+        self.ctx.info = []
 
         wf_default = self._default_wf_para
         if "wf_parameters" in self.inputs:
@@ -138,12 +154,6 @@ class SpexJobWorkChain(WorkChain):
         self.ctx.label_wf = self.inputs.get("label", "spex_job_wc")
 
         # return para/vars
-        self.ctx.successful = True
-        self.ctx.warnings = []
-        # "debug": {},
-        self.ctx.errors = []
-        self.ctx.info = []
-        self.ctx.total_wall_time = 0
 
     def validate_input(self):
         """
@@ -197,6 +207,63 @@ class SpexJobWorkChain(WorkChain):
         self.ctx.calcs.append(future)
 
         return ToContext(last_base_wc=future)
+
+    def inspect_spex(self):
+        """
+        Analyse the results of the previous Calculation (Spex),
+        checking whether it finished successfully or if not, troubleshoot the
+        cause and adapt the input parameters accordingly before
+        restarting, or abort if unrecoverable error was found
+        """
+        self.report("INFO: inspect SPEX")
+        try:
+            base_wc = self.ctx.last_base_wc
+        except AttributeError:
+            self.ctx.parse_last = False
+            error = "ERROR: Something went wrong I do not have a last calculation"
+            self.control_end_wc(error)
+            return self.exit_codes.ERROR_SPEX_CALC_FAILED
+
+        exit_status = base_wc.exit_status
+        if not base_wc.is_finished_ok:
+            error = (
+                f"ERROR: Last SPEX calculation failed with exit status {exit_status}"
+            )
+            self.control_end_wc(error)
+            return self.exit_codes.ERROR_SPEX_CALC_FAILED
+        else:
+            self.ctx.parse_last = True
+
+    def get_res(self):
+        """
+        Check how the last SPEX calculation went
+        Parse some results.
+        """
+        self.report("INFO: get results SPEX")
+        if self.ctx.parse_last:
+            last_base_wc = self.ctx.last_base_wc
+            spex_calcjob = load_node(find_last_submitted_calcjob(last_base_wc))
+            walltime = last_base_wc.outputs.output_parameters.dict.walltime
+
+            if isinstance(walltime, int):
+                self.ctx.total_wall_time = self.ctx.total_wall_time + walltime
+
+            with spex_calcjob.outputs.retrieved.open(
+                spex_calcjob.process_class._ERROR_FILE_NAME, "r"
+            ) as errfile:
+                output_dict = get_err_info(errfile.read())
+
+            spex_info = output_dict.get("spex_info", [])
+            if spex_info is not None:
+                self.ctx.info.extend(spex_info)
+
+            spex_warnings = output_dict.get("spex_warnings", [])
+            if spex_warnings is not None:
+                self.ctx.warnings.extend(spex_warnings)
+
+            spex_errors = output_dict.get("spex_errors", [])
+            if spex_errors is not None:
+                self.ctx.errors.extend(spex_errors)
 
     def return_results(self):
         """

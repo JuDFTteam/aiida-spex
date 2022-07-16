@@ -13,6 +13,7 @@ def get_run_info(contents):
         re.compile(r"Hostname:\s*(.*)"),
         re.compile(r"Interfaced to \s*(.*)"),
         re.compile(r"MPI:\s*(.*)"),
+        re.compile(r"Timing:\s*([0-9]+)\n")
     ]
     run_info = {
         "version": None,
@@ -21,13 +22,26 @@ def get_run_info(contents):
         "hostname": None,
         "interfaced_to": None,
         "mpi": None,
+        'walltime': None
     }
     for key, pattern in zip(run_info.keys(), run_patterns):
         match = pattern.search(contents)
         if match:
             run_info[key] = re.sub(" +|\n", " ", match.group(1).strip())
 
+    run_info['walltime'] =int(run_info['walltime'])
+
     return run_info
+
+def get_err_info(contents):
+    '''
+    Get error information from out.error file.
+    '''
+    err_info = {}
+    err_info['spex_errors']  = re.findall(r"SPEX-ERROR.*", contents)
+    err_info['spex_warnings'] = re.findall(r'SPEX-WARNING.*', contents)
+    err_info['spex_info'] = re.findall(r'SPEX-INFO.*', contents)
+    return err_info
 
 
 def get_basic_info(contents):

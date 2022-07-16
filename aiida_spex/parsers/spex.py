@@ -80,17 +80,11 @@ class SpexParser(Parser):
                 self.logger.error(f"Failed to open error file: {errorfile}.")
                 return self.exit_codes.ERROR_OPENING_OUTPUTS
             if error_file_lines:
-                # spex_warnings=re.findall(r'SPEX-WARNING.*', error_file_lines)
                 spex_error = re.findall(r"SPEX-ERROR.*", error_file_lines)
-                # spex_info = re.findall(r'SPEX-INFO.*', error_file_lines)
 
-                # if spex_warnings:
-                # self.logger.warning(f"SPEX warnings: {spex_warnings}")
                 if spex_error:
                     self.logger.error(f"SPEX error: {spex_error}")
                     return self.exit_codes.ERROR_SPEX_CALC_FAILED
-                # if spex_info:
-                # self.logger.info(f"SPEX info: {spex_info}")
 
         with output_folder.open(
             SpexCalculation._OUTPUT_FILE_NAME, "r"
