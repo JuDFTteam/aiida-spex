@@ -93,7 +93,7 @@ class SpexParser(Parser):
                 # self.logger.info(f"SPEX info: {spex_info}")
 
         with output_folder.open(
-            SpexCalculation._OUTPUT_FILE_NAME_NAME, "r"
+            SpexCalculation._OUTPUT_FILE_NAME, "r"
         ) as spexout_opened:
             success = True
             parser_info = {}

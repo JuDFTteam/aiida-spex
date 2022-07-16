@@ -12,6 +12,7 @@
 """
 In this module you find the workchain 'SpexJobWorkChain' for the JOB
 cycle management of a SPEX calculation with AiiDA.
+
 NOTICE: inorder to avoid large amount of data transfer for upload and dowload ...
 ... all necessary files for the calculation and restart are kept on the remote machine. ...
 ... Therefore is is adviced to do the calculation in the same remote machine. 

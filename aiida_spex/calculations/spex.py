@@ -18,6 +18,7 @@ import io
 import os
 
 import six
+import re
 from aiida.common.datastructures import CalcInfo, CodeInfo
 from aiida.common.exceptions import InputValidationError, UniquenessError
 from aiida.common.utils import classproperty
@@ -37,8 +38,8 @@ class SpexCalculation(CalcJob):
 
     # Default input and output files
     # these will be shown in AiiDA
-    _OUTPUT_FILE_NAME_NAME = "spex.out"
-    _INPUT_FILE_NAME_NAME = "spex.inp"
+    _OUTPUT_FILE_NAME = "spex.out"
+    _INPUT_FILE_NAME = "spex.inp"
 
     # Files needed for the SPEX calculation
 
@@ -105,7 +106,7 @@ class SpexCalculation(CalcJob):
         _ECORE_FILE,
     ]
 
-    _copy_filelist1 = [_INPUT_FILE_NAME_NAME, _ENPARA_FILE_NAME]
+    _copy_filelist1 = [_INPUT_FILE_NAME, _ENPARA_FILE_NAME]
 
     # possible settings_dict keys
     _settings_keys = [
@@ -123,23 +124,24 @@ class SpexCalculation(CalcJob):
         spec.input(
             "metadata.options.output_filename",
             valid_type=six.string_types,
-            default=cls._OUTPUT_FILE_NAME_NAME,
+            default=cls._OUTPUT_FILE_NAME,
         )
         # inputs
         spec.input(
             "parent_folder",
             valid_type=RemoteData,
             required=False,
-            help="Use a remote or local repository folder as parent folder "
+            help="Use a remote or local* repository folder as parent folder "
             "(also for restarts and similar). It should contain all the "
             "needed files for a SPEX calc, only edited files should be "
-            "uploaded from the repository.",
+            "uploaded from the repository."
+            "*(SPEX restart is not supported from local)",
         )
         spec.input(
             "parameters",
             valid_type=Dict,
             required=False,
-            help="Calculation parameters.",
+            help="Calculation parameters. This dictionary mimics the parameters of a spex.inp file.",
         )
 
         spec.input(
@@ -157,6 +159,8 @@ class SpexCalculation(CalcJob):
             "metadata.options.parser_name",
             valid_type=str,
             default="spex.spexparser",
+            help="The name of the parser to use for parsing the output of the calculation."
+            "Depending on the type of calculation parser may vary.",
         )
 
         # declare outputs of the calculation
@@ -212,6 +216,7 @@ class SpexCalculation(CalcJob):
         remote_symlink_list = []
         mode_retrieved_filelist = []
         filelist_tocopy_remote = []
+        remote_restart_copy_list = []
         settings_dict = {}
 
         has_parent = False
@@ -246,7 +251,22 @@ class SpexCalculation(CalcJob):
             # check if folder from db given, or get folder from rep.
             # Parent calc does not has to be on the same computer.
 
-            if parent_calc_class is FleurCalculation:
+            if parent_calc_class is SpexCalculation:
+                new_comp = self.node.computer
+                old_comp = parent_calc.computer
+                if new_comp.uuid != old_comp.uuid:
+                    # don't copy files, copy files locally
+                    copy_remotely = False
+                else:
+                    parent_file_list = parent_calc_folder.listdir()
+                    remote_restart_copy_list += [
+                        j
+                        for j in parent_file_list
+                        for i in self._RESTART_FILE_NAMES
+                        if re.match(i + "$", j)
+                    ]
+
+            elif parent_calc_class is FleurCalculation:
                 new_comp = self.node.computer
                 old_comp = parent_calc.computer
                 if new_comp.uuid != old_comp.uuid:
@@ -294,9 +314,10 @@ class SpexCalculation(CalcJob):
             # TODO: not on same computer -> copy needed files from repository
             # if they are not there throw an error
             if copy_remotely:  # on same computer.
-                # from fleurmodes
                 filelist_tocopy_remote = (
-                    filelist_tocopy_remote + self._copy_filelist_job_remote
+                    filelist_tocopy_remote
+                    + self._copy_filelist_job_remote
+                    + remote_restart_copy_list
                 )
                 # from settings, user specified
                 # TODO: check if list?
@@ -318,7 +339,7 @@ class SpexCalculation(CalcJob):
 
                 self.logger.info("remote copy file list {}".format(remote_copy_list))
 
-        input_filename = folder.get_abs_path(self._INPUT_FILE_NAME_NAME)
+        input_filename = folder.get_abs_path(self._INPUT_FILE_NAME)
 
         with open(input_filename, "w") as infile:
             # Should there be a title to identify the input?
@@ -333,7 +354,7 @@ class SpexCalculation(CalcJob):
         # Empty command line by default
         # cmdline_params = settings_dict.pop('CMDLINE', [])
         # calcinfo.cmdline_params = (list(cmdline_params)
-        #                           + ["-in", self._INPUT_FILE_NAME_NAME])
+        #                           + ["-in", self._INPUT_FILE_NAME])
 
         self.logger.info("local copy file list {}".format(local_copy_list))
 
@@ -343,8 +364,8 @@ class SpexCalculation(CalcJob):
 
         # Retrieve by default the output file and the xml file
         retrieve_list = []
-        retrieve_list.append(self._INPUT_FILE_NAME_NAME)
-        retrieve_list.append(self._OUTPUT_FILE_NAME_NAME)
+        retrieve_list.append(self._INPUT_FILE_NAME)
+        retrieve_list.append(self._OUTPUT_FILE_NAME)
         retrieve_list.append(self._OUTXML_FILE_NAME)
         retrieve_list.append(self._INPXML_FILE_NAME)
         retrieve_list.append(self._ERROR_FILE_NAME)
@@ -386,8 +407,8 @@ class SpexCalculation(CalcJob):
 
         codeinfo.code_uuid = code.uuid
         codeinfo.withmpi = self.node.get_attribute("max_wallclock_seconds")
-        codeinfo.stdin_name = self._INPUT_FILE_NAME_NAME
-        codeinfo.stdout_name = self._OUTPUT_FILE_NAME_NAME
+        codeinfo.stdin_name = self._INPUT_FILE_NAME
+        codeinfo.stdout_name = self._OUTPUT_FILE_NAME
         # codeinfo.join_files = True
         codeinfo.stderr_name = self._ERROR_FILE_NAME
 
