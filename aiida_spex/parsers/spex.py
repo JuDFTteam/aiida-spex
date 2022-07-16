@@ -18,7 +18,7 @@ from aiida.orm import Dict
 from aiida.common.exceptions import NotExistent
 from aiida_spex.calculations.spex import SpexCalculation
 
-from aiida_spex.tools.io import spexout_parser
+from aiida_spex.tools.spex_io import spexout_parser
 import re
 
 

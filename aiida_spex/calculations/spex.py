@@ -24,6 +24,7 @@ from aiida.common.utils import classproperty
 from aiida.engine import CalcJob
 from aiida.orm import Dict, RemoteData
 from aiida_fleur.calculation.fleur import FleurCalculation
+from aiida_spex.tools.spexinp_utils import make_spex_inp
 
 
 class SpexCalculation(CalcJob):
@@ -117,9 +118,8 @@ class SpexCalculation(CalcJob):
         )
         spec.input(
             "parameters",
-            valid_type=six.string_types,
+            valid_type=Dict,
             required=False,
-            non_db=True,
             help="Calculation parameters.",
         )
 
@@ -303,7 +303,7 @@ class SpexCalculation(CalcJob):
         with open(input_filename, "w") as infile:
             # Should there be a title to identify the input?
             # A version number? perhaps
-            infile.write("{}".format(input_parameters))
+            infile.write("{}".format(make_spex_inp(input_parameters.get_dict())))
 
         ########## MAKE CALCINFO ###########
 
