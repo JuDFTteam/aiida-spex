@@ -56,7 +56,7 @@ class SpexJobWorkChain(WorkChain):
     """
 
     _workflowversion = "1.0.2"
-    _default_wf_para = {"spex_runmax": 1}
+    _default_wf_para = {"spex_runmax": 0}
 
     _default_options = {
         "resources": {"num_machines": 1, "num_mpiprocs_per_machine": 1},
@@ -149,7 +149,7 @@ class SpexJobWorkChain(WorkChain):
             options[key] = options.get(key, val)
         self.ctx.options = options
 
-        self.ctx.max_number_runs = self.ctx.wf_dict.get("spex_runmax", 4)
+        self.ctx.max_number_runs = self.ctx.wf_dict.get("spex_runmax", 2)
         self.ctx.description_wf = self.inputs.get("description", "") + "|spex_job_wc|"
         self.ctx.label_wf = self.inputs.get("label", "spex_job_wc")
 
