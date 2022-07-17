@@ -1,8 +1,8 @@
 import re
-from io import StringIO
+# from io import StringIO
 
 import numpy as np
-import pandas as pd
+# import pandas as pd
 
 
 def get_run_info(contents):
@@ -35,7 +35,7 @@ def get_run_info(contents):
 
 def get_err_info(contents):
     '''
-    Get error information from out.error file.
+    Get info/warning/error information from out.error file.
     '''
     err_info = {}
     err_info['spex_errors']  = re.findall(r"SPEX-ERROR.*", contents)

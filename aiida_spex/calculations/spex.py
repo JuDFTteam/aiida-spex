@@ -354,7 +354,7 @@ class SpexCalculation(CalcJob):
         # Empty command line by default
         # cmdline_params = settings_dict.pop('CMDLINE', [])
         # calcinfo.cmdline_params = (list(cmdline_params)
-        #                           + ["-in", self._INPUT_FILE_NAME])
+        #                           + [">", self._INPUT_FILE_NAME])
 
         self.logger.info("local copy file list {}".format(local_copy_list))
 
