@@ -19,6 +19,7 @@ from aiida.common.exceptions import NotExistent
 from aiida_spex.calculations.spex import SpexCalculation
 
 from aiida_spex.tools.spex_io import spexout_parser
+from aiida_spex.tools.add_parsers import parser_registry, spexfile_parse
 import re
 
 
@@ -26,9 +27,16 @@ class SpexParser(Parser):
     def get_linkname_outparams(self):
         """
         Returns the name of the link to the output_complex
-        Node contains the Fleur output in a rather complex dictionary.
+        Node contains the SPEX output in a rather complex dictionary.
         """
         return "output_parameters"
+
+    def get_linkname_outparams_add(self):
+        """
+        Returns the name of the link to the output_add
+        Node contains the SPEX output corresponding to the given additional parser.
+        """
+        return "output_parameters_add"
 
     def parse(self, **kwargs):
         """
@@ -113,3 +121,33 @@ class SpexParser(Parser):
             spexout_params = Dict(dict=parser_info)
             link_name = self.get_linkname_outparams()
             self.out(link_name, spexout_params)
+
+        # Additional parsers
+
+        add_parser_list = calc.inputs.settings.get_dict()["parsers"]
+        if add_parser_list:
+            add_dict = {}
+            for parser_name in add_parser_list:
+                add_filename = parser_registry[parser_name]
+                if add_filename in list_of_files:
+                    try:
+                        with output_folder.open(add_filename, "r") as add_file:
+                            add_dict_t = spexfile_parse(
+                                parser_name, out_dict, add_file.read()
+                            )
+                            add_dict[parser_name] = add_dict_t
+                    except OSError:
+                        self.logger.error(f"Failed to open error file: {errorfile}.")
+                        return self.exit_codes.ERROR_OPENING_OUTPUTS
+                else:
+                    self.logger.error(f"File {add_filename} not found")
+                    return self.exit_codes.ERROR_SPEXOUT_PARSING_FAILED
+            if add_dict:
+                add_params = Dict(dict=add_dict)
+                link_name = self.get_linkname_outparams_add()
+                self.out(link_name, add_params)
+            else:
+                self.logger.error("Something went wrong, no add_dict found")
+                add_params = Dict(dict=add_dict)
+                link_name = self.get_linkname_outparams_add()
+                self.out(link_name, add_params)
