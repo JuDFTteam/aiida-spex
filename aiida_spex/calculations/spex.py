@@ -26,6 +26,7 @@ from aiida.engine import CalcJob
 from aiida.orm import Dict, RemoteData
 from aiida_fleur.calculation.fleur import FleurCalculation
 from aiida_spex.tools.spexinp_utils import make_spex_inp
+from aiida_spex.tools.add_parsers import parser_registry
 
 
 class SpexCalculation(CalcJob):
@@ -115,6 +116,7 @@ class SpexCalculation(CalcJob):
         "additional_remotecopy_list",
         "remove_from_remotecopy_list",
         "cmdline",
+        "parsers",
     ]
 
     @classmethod
@@ -165,7 +167,7 @@ class SpexCalculation(CalcJob):
 
         # declare outputs of the calculation
         spec.output("output_parameters", valid_type=Dict, required=False)
-        spec.output("output_params_complex", valid_type=Dict, required=False)
+        spec.output("output_parameters_add", valid_type=Dict, required=False)
         spec.output("error_params", valid_type=Dict, required=False)
         spec.default_output_node = "output_parameters"
 
@@ -192,6 +194,11 @@ class SpexCalculation(CalcJob):
             message="Parsing of SPEX output file failed.",
         )
         spec.exit_code(
+            305,
+            "ERROR_INVALID_PARSER_NAME",
+            message="Invalid/unregisterd parser names provided.",
+        )
+        spec.exit_code(
             310,
             "ERROR_NOT_ENOUGH_MEMORY",
             message="SPEX calculation failed due to lack of memory.",
@@ -215,12 +222,14 @@ class SpexCalculation(CalcJob):
         remote_copy_list = []
         remote_symlink_list = []
         mode_retrieved_filelist = []
+        parser_retrived_filelist = []
         filelist_tocopy_remote = []
         remote_restart_copy_list = []
         settings_dict = {}
 
         has_parent = False
         copy_remotely = True
+        is_parser_list = False
 
         code = self.inputs.code
 
@@ -250,6 +259,7 @@ class SpexCalculation(CalcJob):
 
             # check if folder from db given, or get folder from rep.
             # Parent calc does not has to be on the same computer.
+            # Check parent folder for files and is they exist copy them
 
             if parent_calc_class is SpexCalculation:
                 new_comp = self.node.computer
@@ -280,6 +290,8 @@ class SpexCalculation(CalcJob):
         # check existence of settings (optional)
         if "settings" in self.inputs:
             settings = self.inputs.settings
+            if "parsers" in self.inputs.settings:
+                is_parser_list = True
         else:
             settings = None
 
@@ -287,6 +299,15 @@ class SpexCalculation(CalcJob):
             settings_dict = {}
         else:
             settings_dict = settings.get_dict()
+
+        if is_parser_list:
+            add_parsers_list = settings_dict["parsers"]
+            if not all(
+                item in list(parser_registry.keys()) for item in add_parsers_list
+            ):
+                self.exit_codes.ERROR_INVALID_PARSER_NAME
+            else:
+                parser_retrived_filelist = [parser_registry[p] for p in add_parsers_list]
 
         # check for for allowed keys, ignore unknown keys but warn.
         for key in settings_dict.keys():
@@ -378,6 +399,11 @@ class SpexCalculation(CalcJob):
         add_retrieve = settings_dict.get("additional_retrieve_list", [])
         self.logger.info("add_retrieve: {}".format(add_retrieve))
         for file1 in add_retrieve:
+            retrieve_list.append(file1)
+
+        # parser specific retrieve
+        self.logger.info("parser_retrived_filelist: {}".format(parser_retrived_filelist))
+        for file1 in parser_retrived_filelist:
             retrieve_list.append(file1)
 
         remove_retrieve = settings_dict.get("remove_from_retrieve_list", [])

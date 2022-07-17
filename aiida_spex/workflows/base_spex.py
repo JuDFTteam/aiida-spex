@@ -43,7 +43,7 @@ class SpexBaseWorkChain(BaseRestartWorkChain):
     @classmethod
     def define(cls, spec):
         super().define(spec)
-        spec.expose_inputs(SpexCalculation, exclude=('metadata.options',))
+        spec.expose_inputs(SpexCalculation, exclude=("metadata.options",))
         spec.input(
             "options",
             valid_type=orm.Dict,
@@ -83,7 +83,7 @@ class SpexBaseWorkChain(BaseRestartWorkChain):
         spec.expose_outputs(SpexCalculation)
 
         spec.exit_code(
-            390,
+            290,
             "ERROR_INVALID_PARAMETERS",
             message="The input parameters are invalid.",
         )
@@ -118,7 +118,7 @@ class SpexBaseWorkChain(BaseRestartWorkChain):
             self.ctx.inputs.settings = self.inputs.settings.get_dict()
         else:
             self.ctx.inputs.settings = {}
-
+            
         if "parameters" in self.inputs:
             isvalid = check_parameters(self.inputs.parameters.get_dict())
             if not isvalid:

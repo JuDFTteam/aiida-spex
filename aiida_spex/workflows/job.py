@@ -93,7 +93,12 @@ class SpexJobWorkChain(WorkChain):
         spec.expose_outputs(SpexBaseWorkChain, namespace="last_calc")
 
         spec.exit_code(
-            230, "ERROR_INVALID_INPUT_PARAM", message="Invalid workchain parameters."
+            130, "ERROR_INVALID_INPUT_PARAM", message="Invalid workchain parameters."
+        )
+        spec.exit_code(
+            102,
+            "ERROR_SPEX_CALC_FAILED",
+            message="SPEX calculation failed for unknown reason.",
         )
 
     def start(self):
