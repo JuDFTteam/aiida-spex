@@ -40,8 +40,8 @@ parameters = Dict(dict={
     },
     'KPTPATH':['G','R','X','G'],
     'JOB': {
-        'KS': {'1':(4,12)},
-        'GW': {'1':(4,12)}
+        'KS': {'1':[(4,12)]},
+        'GW': {'1':[(4,12)]}
     },
     'ITERATE': True # default = True
 })
