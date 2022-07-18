@@ -147,10 +147,10 @@ def format_job(val):
                         val3,
                     ) in val2.items():  # key3=R, val3={range:..., step:...}
                         spectra_range = "{"
-                        if isinstance(val3["range"], range):
+                        if isinstance(val3["range"], list):
                             s_range = val3["range"]
-                            start = s_range.start
-                            end = s_range.stop
+                            start = str(s_range[0])
+                            end = str(s_range[1])
                             spectra_range += f"{start}:{end}"
                         else:
                             print(f"Spectral function {key2} must have a range")
@@ -162,9 +162,9 @@ def format_job(val):
                         if isinstance(val3, list):
                             for val4 in val3:
                                 band_range = []
-                                if isinstance(val4, range):
-                                    start = val4.start
-                                    end = val4.stop
+                                if isinstance(val4, list):
+                                    start = str(val4[0])
+                                    end = str(val4[1])
                                     band_range.append(f"{start}-{end}")
                                 else:
                                     band_range.append(str(val4))
