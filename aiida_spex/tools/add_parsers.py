@@ -7,29 +7,32 @@ from io import StringIO
 
 # Parser registry defines a parser_name and a file/list of files to be parsed.
 # The parser name is used to identify the parser in the SpecificParser class.
-parser_registry = {"project": "spex.binfo"}
+parser_registry = {"project": "spex.binfo", "gw": "spex.out", "dos": "spex.dos"}
 
 
 def project_parser(parser_name, out_dict, content):
     return_dict = {}
-    atoms=np.array(out_dict['unitcell_geometry'])[:,2]
+    atoms = np.array(out_dict["unitcell_geometry"])[:, 2]
     binfo = pd.read_csv(
-                StringIO(content), 
-                delim_whitespace=True,
-                comment="#",
-                skip_blank_lines=True,
-                header=None
-                )
-    binfo.columns = [ "band", "energy"] + [f"{i}_{l}" for i,l in [(i,l) for i in atoms for l in ["s","p","d","f","g"]]]
+        StringIO(content),
+        delim_whitespace=True,
+        comment="#",
+        skip_blank_lines=True,
+        header=None,
+    )
+    binfo.columns = ["band", "energy"] + [
+        f"{i}_{l}"
+        for i, l in [(i, l) for i in atoms for l in ["s", "p", "d", "f", "g"]]
+    ]
     pattern = re.compile(r"k point \d+: \((.*)\)")
     kpoints = pattern.findall(content)
     kpoints = [list(map(float, kpoint.split(","))) for kpoint in kpoints]
 
-    return_dict={
-        "binfo": binfo.to_dict('list'), 
+    return_dict = {
+        "binfo": binfo.to_dict("list"),
         "kpoints": kpoints,
-        "parser_name": parser_name
-        }
+        "parser": parser_name,
+    }
 
     return return_dict
 
