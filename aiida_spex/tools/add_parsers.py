@@ -11,6 +11,7 @@ parser_registry = {"project": "spex.binfo"}
 
 
 def project_parser(parser_name, out_dict, content):
+    return_dict = {}
     atoms=np.array(out_dict['unitcell_geometry'])[:,2]
     binfo = pd.read_csv(
                 StringIO(content), 
@@ -20,7 +21,17 @@ def project_parser(parser_name, out_dict, content):
                 header=None
                 )
     binfo.columns = [ "band", "energy"] + [f"{i}_{l}" for i,l in [(i,l) for i in atoms for l in ["s","p","d","f","g"]]]
-    return {"binfo": binfo.to_dict('list'), "parser_name": parser_name}
+    pattern = re.compile(r"k point \d+: \((.*)\)")
+    kpoints = pattern.findall(content)
+    kpoints = [list(map(float, kpoint.split(","))) for kpoint in kpoints]
+
+    return_dict={
+        "binfo": binfo.to_dict('list'), 
+        "kpoints": kpoints,
+        "parser_name": parser_name
+        }
+
+    return return_dict
 
 
 def spexfile_parse(parser_name, out_dict, content):
