@@ -123,31 +123,34 @@ class SpexParser(Parser):
             self.out(link_name, spexout_params)
 
         # Additional parsers
-
-        add_parser_list = calc.inputs.settings.get_dict()["parsers"]
-        if add_parser_list:
-            add_dict = {}
-            for parser_name in add_parser_list:
-                add_filename = parser_registry[parser_name]
-                if add_filename in list_of_files:
-                    try:
-                        with output_folder.open(add_filename, "r") as add_file:
-                            add_dict_t = spexfile_parse(
-                                parser_name, out_dict, add_file.read()
+        settings_dict = calc.inputs.settings.get_dict()
+        if "parsers" in settings_dict:
+            add_parser_list = settings_dict["parsers"]
+            if add_parser_list:
+                add_dict = {}
+                for parser_name in add_parser_list:
+                    add_filename = parser_registry[parser_name]
+                    if add_filename in list_of_files:
+                        try:
+                            with output_folder.open(add_filename, "r") as add_file:
+                                add_dict_t = spexfile_parse(
+                                    parser_name, out_dict, add_file.read()
+                                )
+                                add_dict[parser_name] = add_dict_t
+                        except OSError:
+                            self.logger.error(
+                                f"Failed to open error file: {errorfile}."
                             )
-                            add_dict[parser_name] = add_dict_t
-                    except OSError:
-                        self.logger.error(f"Failed to open error file: {errorfile}.")
-                        return self.exit_codes.ERROR_OPENING_OUTPUTS
+                            return self.exit_codes.ERROR_OPENING_OUTPUTS
+                    else:
+                        self.logger.error(f"File {add_filename} not found")
+                        return self.exit_codes.ERROR_SPEXOUT_PARSING_FAILED
+                if add_dict:
+                    add_params = Dict(dict=add_dict)
+                    link_name = self.get_linkname_outparams_add()
+                    self.out(link_name, add_params)
                 else:
-                    self.logger.error(f"File {add_filename} not found")
-                    return self.exit_codes.ERROR_SPEXOUT_PARSING_FAILED
-            if add_dict:
-                add_params = Dict(dict=add_dict)
-                link_name = self.get_linkname_outparams_add()
-                self.out(link_name, add_params)
-            else:
-                self.logger.error("Something went wrong, no add_dict found")
-                add_params = Dict(dict=add_dict)
-                link_name = self.get_linkname_outparams_add()
-                self.out(link_name, add_params)
+                    self.logger.error("Something went wrong, no add_dict found")
+                    add_params = Dict(dict=add_dict)
+                    link_name = self.get_linkname_outparams_add()
+                    self.out(link_name, add_params)

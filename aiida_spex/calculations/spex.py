@@ -25,7 +25,7 @@ from aiida.common.utils import classproperty
 from aiida.engine import CalcJob
 from aiida.orm import Dict, RemoteData
 from aiida_fleur.calculation.fleur import FleurCalculation
-from aiida_spex.tools.spexinp_utils import make_spex_inp
+from aiida_spex.tools.spexinp_utils import make_spex_inp, make_energy_inp
 from aiida_spex.tools.add_parsers import parser_registry
 
 
@@ -56,6 +56,7 @@ class SpexCalculation(CalcJob):
     _ERROR_FILE_NAME = "out.error"
 
     # other
+    _ENERGY_INPUT_FILE_NAME = "energy.inp"
     _KPTS_FILE_NAME = "kpts"
     _QPTS_FILE_NAME = "qpts"
     _POT_FILE_NAME = "pot*"
@@ -199,6 +200,11 @@ class SpexCalculation(CalcJob):
             message="Invalid/unregisterd parser names provided.",
         )
         spec.exit_code(
+            307,
+            "ERROR_ADDITIONAL_PARAMETERS_NOT_VALID",
+            message="additional parameters in parent calculation is notfound/valid",
+        )
+        spec.exit_code(
             310,
             "ERROR_NOT_ENOUGH_MEMORY",
             message="SPEX calculation failed due to lack of memory.",
@@ -228,8 +234,13 @@ class SpexCalculation(CalcJob):
         settings_dict = {}
 
         has_parent = False
+        is_parent_spex = False
+        write_energy_inp = False
         copy_remotely = True
         is_parser_list = False
+
+        energy_inp_file_name = "energy.inp"
+        energy_inp_file_content = ""
 
         code = self.inputs.code
 
@@ -262,6 +273,7 @@ class SpexCalculation(CalcJob):
             # Check parent folder for files and is they exist copy them
 
             if parent_calc_class is SpexCalculation:
+                is_parent_spex = True
                 new_comp = self.node.computer
                 old_comp = parent_calc.computer
                 if new_comp.uuid != old_comp.uuid:
@@ -307,7 +319,9 @@ class SpexCalculation(CalcJob):
             ):
                 self.exit_codes.ERROR_INVALID_PARSER_NAME
             else:
-                parser_retrived_filelist = [parser_registry[p] for p in add_parsers_list]
+                parser_retrived_filelist = [
+                    parser_registry[p] for p in add_parsers_list
+                ]
 
         # check for for allowed keys, ignore unknown keys but warn.
         for key in settings_dict.keys():
@@ -320,6 +334,31 @@ class SpexCalculation(CalcJob):
 
         if "parameters" in self.inputs:
             input_parameters = self.inputs.parameters
+            input_parameters_dict = input_parameters.get_dict()
+            if is_parent_spex:
+                # TODO, what if the parent is not a GW calculation?
+                # TODO, what if the parent is a GW calculation and want provided gw parser?
+                if "energy" in input_parameters_dict:
+                    if isinstance(input_parameters_dict["energy"], str):
+                        if input_parameters_dict["energy"]:
+                            write_energy_inp = True
+                            energy_inp_file_name = input_parameters_dict[
+                                "energy"
+                            ].replace('"', "")
+                            if hasattr(parent_calc.outputs, "output_parameters_add"):
+                                if (
+                                    "gw"
+                                    in parent_calc.outputs.output_parameters_add.get_dict()
+                                ):
+                                    energy_inp_file_content = make_energy_inp(
+                                        parent_calc.outputs.output_parameters_add.get_dict()[
+                                            "gw"
+                                        ]
+                                    )
+                                else:
+                                    self.exit_codes.ERROR_ADDITIONAL_PARAMETERS_NOT_VALID
+                            else:
+                                self.exit_codes.ERROR_ADDITIONAL_PARAMETERS_NOT_VALID
         else:
             # TODO: raise error if no parameters given, but for now use a general raw parameter
             raise InputValidationError(
@@ -367,6 +406,12 @@ class SpexCalculation(CalcJob):
             # A version number? perhaps
             infile.write("{}".format(make_spex_inp(input_parameters.get_dict())))
 
+        if write_energy_inp:
+            energy_input_filename = folder.get_abs_path(energy_inp_file_name)
+            # if energy keyword is preent in the parametrs then write the energy.inp file
+            with open(energy_input_filename, "w") as infile:
+                infile.write("{}".format(energy_inp_file_content))
+
         ########## MAKE CALCINFO ###########
 
         calcinfo = CalcInfo()
@@ -402,7 +447,9 @@ class SpexCalculation(CalcJob):
             retrieve_list.append(file1)
 
         # parser specific retrieve
-        self.logger.info("parser_retrived_filelist: {}".format(parser_retrived_filelist))
+        self.logger.info(
+            "parser_retrived_filelist: {}".format(parser_retrived_filelist)
+        )
         for file1 in parser_retrived_filelist:
             retrieve_list.append(file1)
 
