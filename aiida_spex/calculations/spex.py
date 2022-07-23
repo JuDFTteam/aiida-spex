@@ -239,7 +239,8 @@ class SpexCalculation(CalcJob):
         copy_remotely = True
         is_parser_list = False
 
-        energy_inp_file_name = "energy.inp"
+        energy_inp_file_name = self._ENERGY_INPUT_FILE_NAME
+        energy_inp_with = "GW"
         energy_inp_file_content = ""
 
         code = self.inputs.code
@@ -339,26 +340,33 @@ class SpexCalculation(CalcJob):
                 # TODO, what if the parent is not a GW calculation?
                 # TODO, what if the parent is a GW calculation and want provided gw parser?
                 if "energy" in input_parameters_dict:
-                    if isinstance(input_parameters_dict["energy"], str):
-                        if input_parameters_dict["energy"]:
-                            write_energy_inp = True
-                            energy_inp_file_name = input_parameters_dict[
-                                "energy"
+                    if isinstance(input_parameters_dict["energy"], dict):
+                        write_energy_inp = True
+                        if input_parameters_dict["energy"]["filename"]:
+                            energy_inp_file_name = input_parameters_dict["energy"][
+                                "filename"
                             ].replace('"', "")
-                            if hasattr(parent_calc.outputs, "output_parameters_add"):
-                                if (
-                                    "gw"
-                                    in parent_calc.outputs.output_parameters_add.get_dict()
-                                ):
-                                    energy_inp_file_content = make_energy_inp(
-                                        parent_calc.outputs.output_parameters_add.get_dict()[
-                                            "gw"
-                                        ]
-                                    )
-                                else:
-                                    self.exit_codes.ERROR_ADDITIONAL_PARAMETERS_NOT_VALID
+
+                        if input_parameters_dict["energy"]["with"]:
+                            energy_inp_with = input_parameters_dict["energy"][
+                                "with"
+                            ].upper()
+
+                        if hasattr(parent_calc.outputs, "output_parameters_add"):
+                            if (
+                                "gw"
+                                in parent_calc.outputs.output_parameters_add.get_dict()
+                            ):
+                                energy_inp_file_content = make_energy_inp(
+                                    parent_calc.outputs.output_parameters_add.get_dict()[
+                                        "gw"
+                                    ],
+                                    with_e=energy_inp_with,
+                                )
                             else:
                                 self.exit_codes.ERROR_ADDITIONAL_PARAMETERS_NOT_VALID
+                        else:
+                            self.exit_codes.ERROR_ADDITIONAL_PARAMETERS_NOT_VALID
         else:
             # TODO: raise error if no parameters given, but for now use a general raw parameter
             raise InputValidationError(

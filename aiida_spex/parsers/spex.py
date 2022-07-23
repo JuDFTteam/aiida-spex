@@ -134,7 +134,7 @@ class SpexParser(Parser):
                         try:
                             with output_folder.open(add_filename, "r") as add_file:
                                 add_dict_t = spexfile_parse(
-                                    parser_name, out_dict, add_file.read()
+                                    parser_name, add_file.read(), out_dict
                                 )
                                 add_dict[parser_name] = add_dict_t
                         except OSError:
