@@ -28,6 +28,7 @@
         ]
     },
     "include_package_data": true,
+    "python_requires": ">=3.7",
     "setup_requires": ["reentry"],
     "reentry_register": true,
     "install_requires": [
