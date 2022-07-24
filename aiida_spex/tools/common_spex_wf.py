@@ -109,6 +109,12 @@ def get_inputs_spex(
             inputs["settings"] = settings
         else:
             inputs["settings"] = Dict(dict=settings)
+            
+    if params:
+        if isinstance(params, Dict):
+            inputs["parameters"] = params
+        else:
+            inputs["parameters"] = Dict(dict=params)
 
     if options:
         inputs["options"] = Dict(dict=options)

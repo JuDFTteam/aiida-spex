@@ -1,6 +1,10 @@
 import sys
 from aiida_spex import __version__ as aiida_spex_version
 import pandas as pd
+from pydantic import BaseModel, ValidationError, validator, StrictStr, StrictInt, StrictFloat, Extra
+from typing import (
+    Deque, Dict, FrozenSet, List, Optional, Sequence, Set, Tuple, Union
+)
 
 keyword_reference = {
     "global": [
@@ -251,7 +255,7 @@ def make_spex_inp(parameters):
             if isinstance(val, int):
                 spex_inp_string += f"{key_upper} {val}\n"
             if isinstance(val, float):
-                spex_inp_string += f"{key_upper} {val}eV\n"
+                spex_inp_string += f"{key_upper} {val}\n"
             if isinstance(val, dict) or isinstance(val, list):
                 spex_inp_string += format_spex_inp(key_upper, val)
         if key_upper == "CUSTOM":
@@ -276,3 +280,46 @@ def make_energy_inp(energy_inp_dict, with_e='GW'):
     for i, row in real_energy_inp_df.iterrows():
         real_energy_inp_string += f"  {int(row['Bd']):d} {int(row['kpoint']):d} {int(row['spin']):d} {row[with_e]:.5f}\n"
     return real_energy_inp_string
+
+
+
+class SpexInputValidation(BaseModel, extra=Extra.forbid):
+    """
+    Validate the input parameters of the SpexInput class
+    """
+    bz: List[StrictInt]
+    chkmism: Optional[None] = None
+    chkolap: Optional[None] = None
+    coresoc: Optional[None] = None
+    cutzero: Optional[None] = None
+    deltaex: Optional[StrictStr] = None
+    energy: Optional[StrictStr] = None
+    fixphase: Optional[None] = None
+    gauss: Optional[List[StrictFloat]] = None
+    iterate: Optional[StrictStr] = None
+    kpt: Optional[Dict[StrictStr, List[Union[StrictFloat, StrictInt]]]] = None
+    kptpath: Optional[List[StrictStr]] = None
+    mem: Optional[StrictStr] = None
+    mpikpt: Optional[None] = None
+    mpisplit: Optional[StrictStr] = None
+    nband: Optional[Union[StrictInt, StrictStr, StrictFloat]] = None
+    nosym: Optional[None] = None
+    plussoc: Optional[None] = None
+    restart: Optional[None] = None
+    storebz: Optional[None] = None
+    timing: Optional[None] = None
+    trsoff: Optional[None] = None
+    write: Optional[None] = None
+    wrtkpt: Optional[None] = None
+    job: Optional[Dict] = None
+    analyze: Optional[Dict] = None
+    coulomb: Optional[Dict] = None
+    lapw: Optional[Dict] = None
+    mbasis: Optional[Dict] = None
+    senergy: Optional[Dict] = None
+    suscep: Optional[Dict] = None
+    wannier: Optional[Dict] = None
+    wfprod: Optional[Dict] = None
+    custom: Optional[StrictStr] = None
+
+ValidationError = ValidationError

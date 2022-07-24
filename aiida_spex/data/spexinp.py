@@ -309,25 +309,6 @@ class SpexinpData(Data):
             spex_jobs['ldau'] = False
         return spex_jobs
 
-    def get_parameterdata_ncf(self):
-        """
-        This routine returns an AiiDA :class:`~aiida.orm.Dict` type produced from the ``spex.inp``
-        file. This node can be used for inpgen as `calc_parameters`.
-        This is NOT a calcfunction and does NOT keep the provenance!
-
-        :returns: :class:`~aiida.orm.Dict` node
-        """
-        from aiida_fleur.tools.xml_util import get_inpgen_paranode_from_xml
-        if 'spex.inp' not in self.files:
-            print('cannot get a Data because spexinpdata has no spex.inp file yet')
-            # TODO what to do in this case?
-            return False
-
-        # read in inpxml
-        spexinpfile = self.open(key='spex.inp', mode='r')
-        new_parameters = get_inpgen_paranode_from_xml(etree.parse(spexinpfile))
-        spexinpfile.close() # I don’t like this
-        return new_parameters
 
     # Is there a way to give self to calcfunctions?
     @staticmethod

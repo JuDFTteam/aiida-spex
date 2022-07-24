@@ -21,7 +21,7 @@ NOTICE: inorder to avoid large amount of data transfer for upload and dowload ..
 from __future__ import absolute_import
 
 import six
-from aiida.common.exceptions import NotExistent
+from aiida.common.exceptions import NotExistent, InputValidationError
 from aiida.engine import ToContext, WorkChain
 from aiida.engine import calcfunction as cf
 from aiida.engine import if_, while_
@@ -34,6 +34,7 @@ from aiida_spex.tools.common_spex_wf import (
 )
 from aiida_spex.workflows.base_spex import SpexBaseWorkChain
 from aiida_spex.tools.spex_io import get_err_info
+from aiida_spex.tools.spexinp_utils import SpexInputValidation, ValidationError
 
 
 class SpexJobWorkChain(WorkChain):
@@ -44,7 +45,7 @@ class SpexJobWorkChain(WorkChain):
     Two paths are possible:
 
     (1) Start by doing a DFT calculation TODO
-    (2) Start from a Fleur calculation, with optional remoteData
+    (2) Start from a FLEUR/SPEX calculation, with remoteData
 
     :param wf_parameters: (Dict), Workchain Specifications
     :param calc_parameters: (Dict), Spexinp Parameters
@@ -55,7 +56,7 @@ class SpexJobWorkChain(WorkChain):
         like Success, last result node, list with convergence behavior
     """
 
-    _workflowversion = "1.0.2"
+    _workflowversion = "1.0.8"
     _default_wf_para = {"spex_runmax": 0}
 
     _default_options = {
@@ -162,11 +163,14 @@ class SpexJobWorkChain(WorkChain):
 
     def validate_input(self):
         """
-        # validate input and find out which path (1, or 2) to take
-        # return True means run fleur, if false run spex directly: TODO
+        # validate input parameters
         """
-        pass
-
+        try:
+            SpexInputValidation(**self.inputs.parameters.get_dict())
+        except ValidationError as e:
+            raise InputValidationError(
+                "Found following error in input parameters: {}".format(e)
+            )
     def run_spex(self):
         """
         run a SPEX calculation
@@ -191,8 +195,15 @@ class SpexJobWorkChain(WorkChain):
         else:
             return self.exit_codes.ERROR_INVALID_INPUT_PARAM
 
-        label = " "
-        description = " "
+        if "description" in self.inputs:
+            description = self.inputs.description
+        else:
+            description = " "
+
+        if "label" in self.inputs:
+            label = self.inputs.label
+        else:
+            label = " "
 
         code = self.inputs.spex
         options = self.ctx.options.copy()
