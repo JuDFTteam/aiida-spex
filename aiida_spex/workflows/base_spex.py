@@ -87,6 +87,12 @@ class SpexBaseWorkChain(BaseRestartWorkChain):
             "ERROR_INVALID_PARAMETERS",
             message="The input parameters are invalid.",
         )
+        spec.exit_code(
+            299,
+            "ERROR_SOMETHING_WENT_WRONG",
+            message="SpexJobWorkChain failed and SpexBaseWorkChain has no"
+            " strategy to resolve this",
+        )
 
     def validate_inputs(self):
         """
@@ -118,7 +124,7 @@ class SpexBaseWorkChain(BaseRestartWorkChain):
             self.ctx.inputs.settings = self.inputs.settings.get_dict()
         else:
             self.ctx.inputs.settings = {}
-            
+
         if "parameters" in self.inputs:
             isvalid = check_parameters(self.inputs.parameters.get_dict())
             if not isvalid:
