@@ -56,7 +56,7 @@ class SpexJobWorkChain(WorkChain):
         like Success, last result node, list with convergence behavior
     """
 
-    _workflowversion = "1.0.8"
+    _workflowversion = "1.1.0"
     _default_wf_para = {"spex_runmax": 0}
 
     _default_options = {
@@ -163,7 +163,7 @@ class SpexJobWorkChain(WorkChain):
 
     def validate_input(self):
         """
-        # validate input parameters
+        Validate input parameters
         """
         try:
             SpexInputValidation(**self.inputs.parameters.get_dict())
