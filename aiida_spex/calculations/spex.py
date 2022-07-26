@@ -31,10 +31,10 @@ from aiida_spex.tools.add_parsers import parser_registry
 
 class SpexCalculation(CalcJob):
     """
-    Given a DFT result node(or RemoteData), This calculation will retrive and modify the necessary
+    Given a FLEUR/SPEX result node(or RemoteData), This calculation will retrive and modify the necessary
     files for a SPEX calculation. Prepare and adapt the retrive list and create a
     CalcInfo object for the ExecManager of aiida.
-    NOTE: RemoteData or DFT result node must be a result of SPEX workflow implemented in the aiida-fleur plugin
+    NOTE: RemoteData must be a valid FLEUR or SPEX remote data node.
     """
 
     # Default input and output files
@@ -202,7 +202,9 @@ class SpexCalculation(CalcJob):
         spec.exit_code(
             307,
             "ERROR_ADDITIONAL_PARAMETERS_NOT_VALID",
-            message="additional parameters in parent calculation is notfound/valid",
+            message="Additional parameters in parent calculation is notfound/valid."
+            "INFO: Additional parameter dictionary is a flexible one. "
+            "The data you are requestiong might not be in the parent calculation.",
         )
         spec.exit_code(
             310,
@@ -353,22 +355,22 @@ class SpexCalculation(CalcJob):
                             ].upper()
 
                         if hasattr(parent_calc.outputs, "output_parameters_add"):
-                            if (
-                                "gw"
-                                in parent_calc.outputs.output_parameters_add.get_dict()
-                            ):
-                                energy_inp_file_content = make_energy_inp(
-                                    parent_calc.outputs.output_parameters_add.get_dict()[
-                                        "gw"
-                                    ],
-                                    with_e=energy_inp_with,
-                                )
+                            add_out_para_dict = parent_calc.outputs.output_parameters_add.get_dict()
+                            energy_parsed = [i for i in ["gw","ks"] if i in add_out_para_dict.keys()]
+                            # what if the parent calculation is just a KS calculation? and with is GW?
+                            if energy_parsed:
+                                if energy_parsed[0] == "ks" and energy_inp_with == "GW":
+                                    self.exit_codes.ERROR_ADDITIONAL_PARAMETERS_NOT_VALID
+                                else:
+                                    energy_inp_file_content = make_energy_inp(
+                                        add_out_para_dict[energy_parsed[0]],
+                                        with_e=energy_inp_with,
+                                    )
                             else:
                                 self.exit_codes.ERROR_ADDITIONAL_PARAMETERS_NOT_VALID
                         else:
                             self.exit_codes.ERROR_ADDITIONAL_PARAMETERS_NOT_VALID
         else:
-            # TODO: raise error if no parameters given, but for now use a general raw parameter
             raise InputValidationError(
                 "Input parameters, must be parameters of a valid 'spex inp'"
             )
