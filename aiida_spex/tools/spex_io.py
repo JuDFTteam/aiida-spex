@@ -1,8 +1,19 @@
+# -*- coding: utf-8 -*-
+###############################################################################
+# Copyright (c), Forschungszentrum Jülich GmbH, IAS-1/PGI-1, Germany.         #
+#                All rights reserved.                                         #
+# This file is part of the AiiDA-SPEX package.                               #
+#                                                                             #
+# The code is hosted on GitHub at https://github.com/JuDFTteam/aiida-spex     #
+# For further information on the license, see the LICENSE.txt file            #
+# For further information please visit http://www.flapw.de or                 #
+###############################################################################
+
 import re
 # from io import StringIO
 
 import numpy as np
-# import pandas as pd
+import pandas as pd
 
 
 def get_run_info(contents):
@@ -91,6 +102,26 @@ def get_basic_info(contents):
 def get_unitcell_info(contents):
     # basic_info = get_basic_info(contents)
     # TODO instead of all the info just parse the centers
+
+    list_of_k_points =[]
+    k_points_in_ibz = []
+
+    # k-point list from the spex.out file
+    pattern = re.compile(r"List of k points\s+((.+\n)*)")
+    match = pattern.search(contents)
+
+    if match:
+        list_of_k_points = re.sub(" +|\n", " ", match.group(1).strip())
+        list_of_k_points = np.array(list_of_k_points.split()).reshape(-1, 4)
+
+    # k-points in the IBZ
+    pattern = re.compile(r"(\d+)\s+\(((?:-?\d+\.\d+\,?){3})\)\s+\[\s?((?:\s?-?\d+\.\d+\,?\s?){3})\]\s+eq:\s+(\d+)\n")
+    match = pattern.findall(contents)
+
+    if match:
+        k_points_in_ibz = np.array(match)
+        k_points_in_ibz = pd.DataFrame(k_points_in_ibz, columns=['k_point_number', 'k_point_coordinates', 'k_point_rlat', 'equivalant_k_points'])
+
     pattern = re.compile(r"centers\s*=\s*(\d+)")
     number_of_centers = pattern.search(contents).group(1)
     unitcell_patterns = [
@@ -98,10 +129,7 @@ def get_unitcell_info(contents):
         re.compile(r"Number of symmetry operations\s*=\s*(\d+)"),
         re.compile(r"Number of valence electrons:\s*(\d+)"),
         re.compile(r"Number of k points:\s+(\d+)"),
-        re.compile(r"in IBZ:\s+(\d+)"),
-        # The following are specific to KPTPATH keyword
-        # re.compile(r'K points in path:\s+((.+\n)*)'),
-        # re.compile(r'List of k points\s+((.+\n)*)')
+        re.compile(r"in IBZ:\s+(\d+)")
     ]
     unitcell_info = {
         "unitcell_geometry": None,
@@ -109,8 +137,9 @@ def get_unitcell_info(contents):
         "number_of_valence_electrons": None,
         "number_of_k_points": None,
         "number_of_k_points_in_ibz": None,
-        # 'k_points_in_path':None,
-        # 'list_of_k_points':None,
+        "list_of_k_points": [],
+        "k_points_in_ibz": []
+
     }
 
     for key, pattern in zip(unitcell_info.keys(), unitcell_patterns):
@@ -132,9 +161,44 @@ def get_unitcell_info(contents):
         unitcell_info["number_of_k_points_in_ibz"]
     )
 
-    # unitcell_info['k_points_in_path'] = np.array(unitcell_info['k_points_in_path'].split()).reshape(-1,3)
-    # unitcell_info['list_of_k_points'] = np.array(unitcell_info['list_of_k_points'].split()).reshape(-1,4)
+    unitcell_info["list_of_k_points"] = list_of_k_points
+    unitcell_info["k_points_in_ibz"] = k_points_in_ibz.to_dict("list")
+
     return unitcell_info
+
+def get_out_info(content):
+    is_gap =False
+    is_fermi=True
+    is_max = False
+    out_info={}
+    energy_unit = "Ha"
+
+    # Energy gap
+    pattern = re.compile(r"Energy gap:\s+(-?\d+\.\d+)\s+Ha")
+    match = pattern.findall(content)
+    if match:
+        is_gap = True
+        out_info["energy_gap"] = np.array(match).astype(float)
+    
+    #Fermi energy
+    pattern = re.compile(r"Fermi energy:\s+(-?\d+\.\d+)\s+Ha")
+    match = pattern.findall(content)
+    if match:
+        is_fermi = True
+        out_info["fermi_energy"] = np.array(match).astype(float)
+    
+    #Maximal energy
+    pattern = re.compile(r"Maximal energy:\s+(-?\d+\.\d+)\s+Ha")
+    match = pattern.findall(content)
+    if match:
+        is_max = True
+        out_info["maximal_energy"] = np.array(match).astype(float)
+    
+    if any([is_gap, is_fermi, is_max]):
+        out_info["energy_unit"] = energy_unit
+
+    return out_info
+
 
 
 def spexout_parser(spexout_file):
@@ -146,4 +210,5 @@ def spexout_parser(spexout_file):
     run_info = get_run_info(spexout_file)
     basic_info = get_basic_info(spexout_file)
     unitcell_info = get_unitcell_info(spexout_file)
-    return {**run_info, **basic_info, **unitcell_info}
+    out_info = get_out_info(spexout_file)
+    return {**run_info, **basic_info, **unitcell_info, **out_info}

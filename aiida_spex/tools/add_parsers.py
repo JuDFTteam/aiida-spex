@@ -1,3 +1,14 @@
+# -*- coding: utf-8 -*-
+###############################################################################
+# Copyright (c), Forschungszentrum Jülich GmbH, IAS-1/PGI-1, Germany.         #
+#                All rights reserved.                                         #
+# This file is part of the AiiDA-SPEX package.                               #
+#                                                                             #
+# The code is hosted on GitHub at https://github.com/JuDFTteam/aiida-spex     #
+# For further information on the license, see the LICENSE.txt file            #
+# For further information please visit http://www.flapw.de or                 #
+###############################################################################
+
 from aiida.orm import Dict
 from aiida.common.exceptions import NotExistent
 import re
@@ -13,10 +24,14 @@ parser_registry = {
     "ks": "spex.out",
     "dos": "spex.dos",
     "dielec": "dielecR",
+    "plussoc": "spex.out",
 }
 
 
 def project_parser(parser_name, content, out_dict=None):
+    """
+    Parses the spex.binfo file for a project calculation.
+    """
     return_dict = {}
     atoms = np.array(out_dict["unitcell_geometry"])[:, 2]
     binfo = pd.read_csv(
@@ -44,6 +59,9 @@ def project_parser(parser_name, content, out_dict=None):
 
 
 def get_gw_energies(kpt_energies, k_point, out_dict=None):
+    """
+    Create a dataframe from the gw energies.
+    """
     df = pd.read_csv(StringIO(kpt_energies), sep="\s+", header=None)
     diag_r = pd.DataFrame()
     diag_i = pd.DataFrame()
@@ -70,19 +88,26 @@ def get_gw_energies(kpt_energies, k_point, out_dict=None):
 
 
 def gw_parser(parser_name, content, out_dict=None):
-    '''
+    """
     Parses the spex.out file for a GW calculation.
-    '''
-    pattern = re.compile(r"List of k points\s+((.+\n)*)")
-    match = pattern.search(content)
-
-    if match:
-        list_of_k_points = re.sub(" +|\n", " ", match.group(1).strip())
+    """
+    if "list_of_k_points" in out_dict:
+        list_of_k_points = out_dict["list_of_k_points"]
     else:
-        raise ValueError("Could not find the k-point list in the output file")
+        raise ValueError("Could not find the k-point list in the output file/output dictionary.")
 
-    list_of_k_points = np.array(list_of_k_points.split()).reshape(-1, 4)
+    # # k-point list from the spex.out file
+    # pattern = re.compile(r"List of k points\s+((.+\n)*)")
+    # match = pattern.search(content)
 
+    # if match:
+    #     list_of_k_points = re.sub(" +|\n", " ", match.group(1).strip())
+    #     list_of_k_points = np.array(list_of_k_points.split()).reshape(-1, 4)
+    # else:
+    #     raise ValueError("Could not find the k-point list in the output file")
+
+
+    # Energy eigen values
     r_energies = []
     i_energies = []
     for k_point in list_of_k_points[:, 0]:
@@ -99,7 +124,7 @@ def gw_parser(parser_name, content, out_dict=None):
 
     energies_real = pd.concat(r_energies, axis=0, ignore_index=True)
     energies_imag = pd.concat(i_energies, axis=0, ignore_index=True)
-
+    
     return_dict = {
         "e_real": energies_real.to_dict("list"),
         "e_imag": energies_imag.to_dict("list"),
@@ -109,6 +134,9 @@ def gw_parser(parser_name, content, out_dict=None):
 
 
 def get_ks_energies(kpt_energies, k_point, out_dict=None):
+    """
+    Create a dataframe from the ks energies.
+    """
     df = pd.read_csv(StringIO(kpt_energies), sep="\s+", header=None)
     diag_r = pd.DataFrame()
     diag_r[["Bd", "vxc", "KS"]] = df.iloc[::2]
@@ -126,18 +154,13 @@ def get_ks_energies(kpt_energies, k_point, out_dict=None):
 
 
 def ks_parser(parser_name, content, out_dict=None):
-    '''
+    """
     Parser for the KS energies
-    '''
-    pattern = re.compile(r"List of k points\s+((.+\n)*)")
-    match = pattern.search(content)
-
-    if match:
-        list_of_k_points = re.sub(" +|\n", " ", match.group(1).strip())
+    """
+    if "list_of_k_points" in out_dict:
+        list_of_k_points = out_dict["list_of_k_points"]
     else:
-        raise ValueError("Could not find the k-point list in the output file")
-
-    list_of_k_points = np.array(list_of_k_points.split()).reshape(-1, 4)
+        raise ValueError("Could not find the k-point list in the output file/output dictionary.")
 
     r_energies = []
     for k_point in list_of_k_points[:, 0]:
@@ -161,9 +184,9 @@ def ks_parser(parser_name, content, out_dict=None):
 
 
 def dielec_parser(parser_name, content, out_dict=None):
-    '''
+    """
     Parses the dielectric function from the dielecR output file.
-    '''
+    """
     dielec_df = pd.read_csv(
         StringIO(content),
         sep="\s+",
@@ -205,6 +228,40 @@ def dielec_parser(parser_name, content, out_dict=None):
     return return_dict
 
 
+def plussoc_parser(parser_name, content, out_dict=None):
+    """
+    Parses the PLUSSOC output file.
+    """
+    pattern = re.compile(r"K point\s+(\d+)\s+->\s+\d+\n((?:\s+\d.*\n){1,})((?:.+\n)*)")
+    matches = pattern.findall(content)
+    kpt, eq_kpt, eigenvalues = [], [], []
+    for match in matches:
+        t_match = [re.sub("\ +|\n", " ", w) for w in match]
+        kpt.append(int(t_match[0].strip()))
+        eq_kpt.append(t_match[1].strip())
+        eigenvalues.append(t_match[2].strip())
+    plussoc_df = pd.DataFrame(
+        data={
+            "k_point_number": kpt,
+            "equivalant_k_points": eq_kpt,
+            "eigenvalues": eigenvalues,
+        }
+    )
+    plussoc_df["k_point_number"] = plussoc_df["k_point_number"].astype(int)
+    plussoc_df["equivalant_k_points"] = plussoc_df["equivalant_k_points"].apply(
+        lambda x: np.array(x.split()).reshape(-1, 4)
+    )
+    plussoc_df["eigenvalues"] = plussoc_df["eigenvalues"].apply(
+        lambda x: np.array(x.split()).astype(float)
+    )
+
+    return_dict = {
+        "plussoc": plussoc_df.to_dict("list"),
+        "parser": parser_name,
+    }
+    return return_dict
+
+
 def spexfile_parse(parser_name, content, out_dict=None):
     """
     Using the parser_name provided to the class, this function calles the method that corresponds to the parser_name and returns a dictionary of results
@@ -216,5 +273,7 @@ def spexfile_parse(parser_name, content, out_dict=None):
         return gw_parser(parser_name, content, out_dict)
     elif parser_name == "dielec":
         return dielec_parser(parser_name, content, out_dict)
+    elif parser_name == "plussoc":
+        return plussoc_parser(parser_name, content, out_dict)
     else:
         return {}
