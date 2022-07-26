@@ -119,6 +119,7 @@ def gw_parser(parser_name, content, out_dict=None):
     energy_eigenvalues["real"] = energies_real.to_dict("list")
     energy_eigenvalues["imag"] = energies_imag.to_dict("list")
     
+    # DO NOT change the attributes since they are used in the make_energy_inp function
     return_dict = {
         "results": energy_eigenvalues,
         "parser": parser_name,
@@ -150,6 +151,7 @@ def ks_parser(parser_name, content, out_dict=None):
     """
     Parser for the KS energies
     """
+    energy_eigenvalues = {}
     if "list_of_k_points" in out_dict:
         list_of_k_points = out_dict["list_of_k_points"]
     else:
@@ -168,9 +170,11 @@ def ks_parser(parser_name, content, out_dict=None):
         r_energies.append(rdf)
 
     energies_real = pd.concat(r_energies, axis=0, ignore_index=True)
+    energy_eigenvalues["real"] =energies_real.to_dict("list")
 
+    # DO NOT change the attributes since they are used in the make_energy_inp function
     return_dict = {
-        "results": energies_real.to_dict("list"),
+        "results": energy_eigenvalues,
         "parser": parser_name,
     }
     return return_dict
@@ -264,6 +268,8 @@ def spexfile_parse(parser_name, content, out_dict=None):
         return project_parser(parser_name, content, out_dict)
     elif parser_name == "gw":
         return gw_parser(parser_name, content, out_dict)
+    elif parser_name == "ks":
+        return ks_parser(parser_name, content, out_dict)
     elif parser_name == "dielec":
         return dielec_parser(parser_name, content, out_dict)
     elif parser_name == "plussoc":
