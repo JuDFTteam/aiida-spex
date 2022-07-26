@@ -1,3 +1,14 @@
+# -*- coding: utf-8 -*-
+###############################################################################
+# Copyright (c), Forschungszentrum Jülich GmbH, IAS-1/PGI-1, Germany.         #
+#                All rights reserved.                                         #
+# This file is part of the AiiDA-SPEX package.                               #
+#                                                                             #
+# The code is hosted on GitHub at https://github.com/JuDFTteam/aiida-spex     #
+# For further information on the license, see the LICENSE.txt file            #
+# For further information please visit http://www.flapw.de or                 #
+###############################################################################
+
 import sys
 from aiida_spex import __version__ as aiida_spex_version
 import pandas as pd
@@ -106,6 +117,9 @@ job_spectra = ["DIELEC", "SUSCEP", "SUSCEPR", "SCREEN", "SCREENW"]
 
 
 def check_parameters(parameters):
+    """
+    Check that the given `spex.inp` parameters are valid
+    """
     if parameters:
         global_keys = list(map(lambda x: x.upper(), parameters.keys()))
         if not all(elem in global_keys for elem in necessary_keys):
@@ -140,6 +154,8 @@ def check_parameters(parameters):
 def format_job(val):
     """
     Format the JOB line for the spex.inp file
+    EXAMPLE:
+    JOB GW 1:(20-60) R:(20-50)
     """
     job_string = "JOB "
     if val:
@@ -185,6 +201,13 @@ def format_job(val):
 
 
 def format_section(key, val):
+    """
+    Format the section for the spex.inp file
+    Example:
+    SECTION ANALYZE
+        PROJECT
+    END
+    """
     section_string = "SECTION " + f"{key}\n"
     for key2, val2 in val.items():
         section_string += f"{key2.upper()} {val2.upper()}\n"
@@ -192,6 +215,9 @@ def format_section(key, val):
 
 
 def format_kpt(val):
+    """
+    Format the KPT line for the spex.inp file
+    """
     kpt_string = "KPT "
     for k, v in val.items():
         kpt_string += f"{k}=({v[0]},{v[1]},{v[2]}) "
@@ -199,6 +225,9 @@ def format_kpt(val):
 
 
 def format_kptpath(val):
+    """
+    Format the KPTPATH line for the spex.inp file
+    """
     if "npoints" in val.keys():
         npoints = val["npoints"]
         kptpath_string = "KPTPATH " + f"({','.join(map(str,val['path']))}) {npoints}\n"
@@ -207,6 +236,9 @@ def format_kptpath(val):
     return kptpath_string
 
 def format_energy(val):
+    """
+    Format the ENERGY line for the spex.inp file
+    """
     if 'filename' in val.keys():
         filename = val['filename']
         energy_string = "ENERGY " + f"{filename}\n"
@@ -215,6 +247,9 @@ def format_energy(val):
     return energy_string
 
 def format_spex_inp(key, val):
+    """
+    Format the spex.inp file
+    """
     spex_inp_string = ""
     if isinstance(val, dict):
         if val:
