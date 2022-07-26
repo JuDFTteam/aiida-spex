@@ -50,7 +50,7 @@ def project_parser(parser_name, content, out_dict=None):
     kpoints = [list(map(float, kpoint.split(","))) for kpoint in kpoints]
 
     return_dict = {
-        "binfo": binfo.to_dict("list"),
+        "results": binfo.to_dict("list"),
         "kpoints": kpoints,
         "parser": parser_name,
     }
@@ -91,20 +91,11 @@ def gw_parser(parser_name, content, out_dict=None):
     """
     Parses the spex.out file for a GW calculation.
     """
+    energy_eigenvalues = {}
     if "list_of_k_points" in out_dict:
         list_of_k_points = out_dict["list_of_k_points"]
     else:
         raise ValueError("Could not find the k-point list in the output file/output dictionary.")
-
-    # # k-point list from the spex.out file
-    # pattern = re.compile(r"List of k points\s+((.+\n)*)")
-    # match = pattern.search(content)
-
-    # if match:
-    #     list_of_k_points = re.sub(" +|\n", " ", match.group(1).strip())
-    #     list_of_k_points = np.array(list_of_k_points.split()).reshape(-1, 4)
-    # else:
-    #     raise ValueError("Could not find the k-point list in the output file")
 
 
     # Energy eigen values
@@ -124,10 +115,12 @@ def gw_parser(parser_name, content, out_dict=None):
 
     energies_real = pd.concat(r_energies, axis=0, ignore_index=True)
     energies_imag = pd.concat(i_energies, axis=0, ignore_index=True)
+
+    energy_eigenvalues["real"] = energies_real.to_dict("list")
+    energy_eigenvalues["imag"] = energies_imag.to_dict("list")
     
     return_dict = {
-        "e_real": energies_real.to_dict("list"),
-        "e_imag": energies_imag.to_dict("list"),
+        "results": energy_eigenvalues,
         "parser": parser_name,
     }
     return return_dict
@@ -177,7 +170,7 @@ def ks_parser(parser_name, content, out_dict=None):
     energies_real = pd.concat(r_energies, axis=0, ignore_index=True)
 
     return_dict = {
-        "e_real": energies_real.to_dict("list"),
+        "results": energies_real.to_dict("list"),
         "parser": parser_name,
     }
     return return_dict
@@ -218,7 +211,7 @@ def dielec_parser(parser_name, content, out_dict=None):
         spin = []
 
     return_dict = {
-        "dielec": dielec_df.to_dict("list"),
+        "results": dielec_df.to_dict("list"),
         "lattvec": lattvec,
         "kpoint": kpoint,
         "kindex": kindex,
@@ -256,7 +249,7 @@ def plussoc_parser(parser_name, content, out_dict=None):
     )
 
     return_dict = {
-        "plussoc": plussoc_df.to_dict("list"),
+        "results": plussoc_df.to_dict("list"),
         "parser": parser_name,
     }
     return return_dict
