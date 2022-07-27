@@ -162,7 +162,7 @@ def ks_parser(parser_name, content, out_dict=None):
         pattern = re.compile(
             r"#{2,}\n#{2,} K POINT:\s+"
             + k_point
-            + r"\s+#{2,}\n#{2,}\n{3}-{3}\sDIAGONAL ELEMENTS \[eV\] -{3}\n{2}\sBd\s+vxc\s+KS\s\n((.+\n)*)",
+            + r"\s+#{2,}\n#{2,}\n{3}-{3}\sDIAGONAL ELEMENTS \[eV\] -{3}\n{2}\sBd\s+vxc\s+KS\n((.+\n)*)",
             re.MULTILINE,
         )
         kpt_energies = pattern.search(content).group(1)
