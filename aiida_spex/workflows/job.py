@@ -56,7 +56,7 @@ class SpexJobWorkChain(WorkChain):
         like Success, last result node, list with convergence behavior
     """
 
-    _workflowversion = "1.1.0"
+    _workflowversion = "1.1.2"
     _default_wf_para = {"spex_runmax": 0}
 
     _default_options = {
