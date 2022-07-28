@@ -19,21 +19,22 @@ from io import StringIO
 # Parser registry defines a parser_name and a file/list of files to be parsed.
 # The parser name is used to identify the parser in the SpecificParser class.
 parser_registry = {
-    "project": "spex.binfo",
-    "gw": "spex.out",
-    "ks": "spex.out",
-    "dos": "spex.dos",
-    "dielec": "dielecR",
-    "plussoc": "spex.out",
+    "project": ["spex.binfo"],
+    "gw": ["spex.out"],
+    "ks": ["spex.out"],
+    "dos": ["spex.dos"],
+    "dielec": ["dielecR", "dielec"],
+    "plussoc": ["spex.out"],
 }
 
 
-def project_parser(parser_name, content, out_dict=None):
+def project_parser(parser_name, contents, out_dict=None):
     """
     Parses the spex.binfo file for a project calculation.
     """
     return_dict = {}
     atoms = np.array(out_dict["unitcell_geometry"])[:, 2]
+    content = contents[0]
     binfo = pd.read_csv(
         StringIO(content),
         delim_whitespace=True,
@@ -87,11 +88,13 @@ def get_gw_energies(kpt_energies, k_point, out_dict=None):
     return diag_r, diag_i
 
 
-def gw_parser(parser_name, content, out_dict=None):
+def gw_parser(parser_name, contents, out_dict=None):
     """
     Parses the spex.out file for a GW calculation.
     """
     energy_eigenvalues = {}
+    content = contents[0]
+
     if "list_of_k_points" in out_dict:
         list_of_k_points = out_dict["list_of_k_points"]
     else:
@@ -147,11 +150,13 @@ def get_ks_energies(kpt_energies, k_point, out_dict=None):
     return diag_r
 
 
-def ks_parser(parser_name, content, out_dict=None):
+def ks_parser(parser_name, contents, out_dict=None):
     """
     Parser for the KS energies
     """
     energy_eigenvalues = {}
+    content = contents[0]
+
     if "list_of_k_points" in out_dict:
         list_of_k_points = out_dict["list_of_k_points"]
     else:
@@ -180,55 +185,66 @@ def ks_parser(parser_name, content, out_dict=None):
     return return_dict
 
 
-def dielec_parser(parser_name, content, out_dict=None):
+def dielec_parser(parser_name, contents, out_dict=None):
     """
     Parses the dielectric function from the dielecR output file.
     """
-    dielec_df = pd.read_csv(
-        StringIO(content),
-        sep="\s+",
-        header=None,
-        comment="#",
-        names=["Frequency", "Real", "Imaginary"],
-    )
+    # content = contents[0]
+    dielec=[]
 
-    p_lattvec = re.compile(r"# lattvec:\s*(.*)")
-    match = p_lattvec.search(content)
-    lattvec = match.group(1)
+    for content in contents:
+        dielec_dict_t ={}
+        dielec_df = pd.read_csv(
+            StringIO(content),
+            sep="\s+",
+            header=None,
+            comment="#",
+            names=["Frequency", "Real", "Imaginary"],
+        )
 
-    p_kpoint = re.compile(r"# k point:\s*(.*)")
-    match = p_kpoint.findall(content)
-    kpoint = match
-    if not kpoint:
-        kpoint = []
+        p_lattvec = re.compile(r"# lattvec:\s*(.*)")
+        match = p_lattvec.search(content)
+        lattvec = match.group(1)
 
-    p_kindex = re.compile(r"# k index:\s*(.*)")
-    match = p_kindex.findall(content)
-    kindex = match
-    if not kindex:
-        kindex = []
+        p_kpoint = re.compile(r"# k point:\s*(.*)")
+        match = p_kpoint.findall(content)
+        kpoint = match
+        if not kpoint:
+            kpoint = []
 
-    p_spin = re.compile(r"# spin:\s*(.*)")
-    match = p_spin.findall(content)
-    spin = match
-    if not spin:
-        spin = []
+        p_kindex = re.compile(r"# k index:\s*(.*)")
+        match = p_kindex.findall(content)
+        kindex = match
+        if not kindex:
+            kindex = []
+
+        p_spin = re.compile(r"# spin:\s*(.*)")
+        match = p_spin.findall(content)
+        spin = match
+        if not spin:
+            spin = []
+        
+        dielec_dict_t["data"] = dielec_df.to_dict("list")
+        dielec_dict_t["lattvec"] = lattvec
+        dielec_dict_t["kpoint"] = kpoint
+        dielec_dict_t["kindex"] = kindex
+        dielec_dict_t["spin"] = spin
+
+        dielec.append(dielec_dict_t)
 
     return_dict = {
-        "results": dielec_df.to_dict("list"),
-        "lattvec": lattvec,
-        "kpoint": kpoint,
-        "kindex": kindex,
-        "spin": spin,
+        "results": {"dielecR": dielec[0], "dielec": dielec[1]},
         "parser": parser_name,
     }
     return return_dict
 
 
-def plussoc_parser(parser_name, content, out_dict=None):
+def plussoc_parser(parser_name, contents, out_dict=None):
     """
     Parses the PLUSSOC output file.
     """
+    content = contents[0]
+
     pattern = re.compile(r"K point\s+(\d+)\s+->\s+\d+\n((?:\s+\d.*\n){1,})((?:.+\n)*)")
     matches = pattern.findall(content)
     kpt, eq_kpt, eigenvalues = [], [], []
@@ -259,20 +275,20 @@ def plussoc_parser(parser_name, content, out_dict=None):
     return return_dict
 
 
-def spexfile_parse(parser_name, content, out_dict=None):
+def spexfile_parse(parser_name, contents, out_dict=None):
     """
     Using the parser_name provided to the class, this function calles the method that corresponds to the parser_name and returns a dictionary of results
     :return: a dictionary.
     """
     if parser_name == "project":
-        return project_parser(parser_name, content, out_dict)
+        return project_parser(parser_name, contents, out_dict)
     elif parser_name == "gw":
-        return gw_parser(parser_name, content, out_dict)
+        return gw_parser(parser_name, contents, out_dict)
     elif parser_name == "ks":
-        return ks_parser(parser_name, content, out_dict)
+        return ks_parser(parser_name, contents, out_dict)
     elif parser_name == "dielec":
-        return dielec_parser(parser_name, content, out_dict)
+        return dielec_parser(parser_name, contents, out_dict)
     elif parser_name == "plussoc":
-        return plussoc_parser(parser_name, content, out_dict)
+        return plussoc_parser(parser_name, contents, out_dict)
     else:
         return {}

@@ -322,9 +322,8 @@ class SpexCalculation(CalcJob):
             ):
                 self.exit_codes.ERROR_INVALID_PARSER_NAME
             else:
-                parser_retrived_filelist = [
-                    parser_registry[p] for p in add_parsers_list
-                ]
+                pareser_file_list = [parser_registry[p] for p in add_parsers_list]
+                parser_retrived_filelist = sum(pareser_file_list, [])
 
         # check for for allowed keys, ignore unknown keys but warn.
         for key in settings_dict.keys():
@@ -355,8 +354,12 @@ class SpexCalculation(CalcJob):
                             ].upper()
 
                         if hasattr(parent_calc.outputs, "output_parameters_add"):
-                            add_out_para_dict = parent_calc.outputs.output_parameters_add.get_dict()
-                            energy_parsed = [i for i in ["gw","ks"] if i in add_out_para_dict.keys()]
+                            add_out_para_dict = (
+                                parent_calc.outputs.output_parameters_add.get_dict()
+                            )
+                            energy_parsed = [
+                                i for i in ["gw", "ks"] if i in add_out_para_dict.keys()
+                            ]
                             # what if the parent calculation is just a KS calculation? and with is GW?
                             if energy_parsed:
                                 if energy_parsed[0] == "ks" and energy_inp_with == "GW":

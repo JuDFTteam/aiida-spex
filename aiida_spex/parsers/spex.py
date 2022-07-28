@@ -129,22 +129,24 @@ class SpexParser(Parser):
             if add_parser_list:
                 add_dict = {}
                 for parser_name in add_parser_list:
-                    add_filename = parser_registry[parser_name]
-                    if add_filename in list_of_files:
-                        try:
-                            with output_folder.open(add_filename, "r") as add_file:
-                                add_dict_t = spexfile_parse(
-                                    parser_name, add_file.read(), out_dict
+                    add_contents=[]
+                    add_filenames = parser_registry[parser_name]
+                    for add_filename in add_filenames:
+                        if add_filename in list_of_files:
+                            try:
+                                with output_folder.open(add_filename, "r") as add_file:
+                                    add_contents.append(add_file.read())
+                            except OSError:
+                                self.logger.error(
+                                    f"Failed to open error file: {errorfile}."
                                 )
-                                add_dict[parser_name] = add_dict_t
-                        except OSError:
-                            self.logger.error(
-                                f"Failed to open error file: {errorfile}."
-                            )
-                            return self.exit_codes.ERROR_OPENING_OUTPUTS
-                    else:
-                        self.logger.error(f"File {add_filename} not found")
-                        return self.exit_codes.ERROR_SPEXOUT_PARSING_FAILED
+                                return self.exit_codes.ERROR_OPENING_OUTPUTS
+                        else:
+                            self.logger.error(f"File {add_filename} not found")
+                            return self.exit_codes.ERROR_SPEXOUT_PARSING_FAILED
+                        
+                    add_dict_t = spexfile_parse(parser_name, add_contents, out_dict)
+                    add_dict[parser_name] = add_dict_t
                 if add_dict:
                     add_params = Dict(dict=add_dict)
                     link_name = self.get_linkname_outparams_add()
