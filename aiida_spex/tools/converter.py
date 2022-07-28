@@ -1,3 +1,14 @@
+# -*- coding: utf-8 -*-
+###############################################################################
+# Copyright (c), Forschungszentrum Jülich GmbH, IAS-1/PGI-1, Germany.         #
+#                All rights reserved.                                         #
+# This file is part of the AiiDA-SPEX package.                               #
+#                                                                             #
+# The code is hosted on GitHub at https://github.com/JuDFTteam/aiida-spex     #
+# For further information on the license, see the LICENSE.txt file            #
+# For further information please visit http://www.flapw.de or                 #
+###############################################################################
+
 from __future__ import absolute_import
 import numpy as np
 
@@ -12,10 +23,11 @@ def cartesian_to_internal(coordinate_vectors, bravais_matrix):
         result.append(np.inner(bravais_matrix, coordinate_vector))
     return result
 
+
 def internal_to_cartesian(coordinate_vectors, bravais_matrix):
     result = []
     for coordinate_vector in coordinate_vectors:
-        result.append(np.dot(coordinate_vector,bravais_matrix))
+        result.append(np.dot(coordinate_vector, bravais_matrix))
     return result
 
 
@@ -65,4 +77,5 @@ if __name__ == "__main__":
     print("Relaxed Positions:")
     cartesian_to_internal(cartesian_coordinates2, inverse(bravais_matrix))
     import subprocess
+
     subprocess.run(["which", "python"])

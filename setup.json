@@ -12,7 +12,7 @@
         "Natural Language :: English",
         "Framework :: AiiDA"
     ],
-    "version": "1.0.0",
+    "version": "1.1.2",
     "entry_points": {
         "aiida.calculations": [
             "spex.spex = aiida_spex.calculations.spex:SpexCalculation"
@@ -28,9 +28,12 @@
         ]
     },
     "include_package_data": true,
+    "python_requires": ">=3.7",
     "setup_requires": ["reentry"],
     "reentry_register": true,
     "install_requires": [
-        "aiida-core>=1.0.0b3,<3.0.0"
+        "aiida-core>=1.0.0b3,<3.0.0",
+        "pydantic",
+        "aiida-fleur>=1.2.0,<3.0.0"
     ]
 }

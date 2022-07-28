@@ -1,3 +1,14 @@
+# -*- coding: utf-8 -*-
+###############################################################################
+# Copyright (c), Forschungszentrum Jülich GmbH, IAS-1/PGI-1, Germany.         #
+#                All rights reserved.                                         #
+# This file is part of the AiiDA-SPEX package.                               #
+#                                                                             #
+# The code is hosted on GitHub at https://github.com/JuDFTteam/aiida-spex     #
+# For further information on the license, see the LICENSE.txt file            #
+# For further information please visit http://www.flapw.de or                 #
+###############################################################################
+
 from aiida.orm import Bool, Node, load_node
 from aiida.plugins import CalculationFactory, DataFactory
 
@@ -8,8 +19,11 @@ def is_code(code):
     if yes returns a Code node in all cases
     if no returns None
     """
-    from aiida.common.exceptions import (InputValidationError,
-                                         MultipleObjectsError, NotExistent)
+    from aiida.common.exceptions import (
+        InputValidationError,
+        MultipleObjectsError,
+        NotExistent,
+    )
     from aiida.orm import Code
 
     if isinstance(code, Code):
@@ -106,6 +120,12 @@ def get_inputs_spex(
             inputs["settings"] = settings
         else:
             inputs["settings"] = Dict(dict=settings)
+            
+    if params:
+        if isinstance(params, Dict):
+            inputs["parameters"] = params
+        else:
+            inputs["parameters"] = Dict(dict=params)
 
     if options:
         inputs["options"] = Dict(dict=options)

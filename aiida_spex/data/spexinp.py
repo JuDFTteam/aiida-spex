@@ -1,4 +1,13 @@
 # -*- coding: utf-8 -*-
+###############################################################################
+# Copyright (c), Forschungszentrum Jülich GmbH, IAS-1/PGI-1, Germany.         #
+#                All rights reserved.                                         #
+# This file is part of the AiiDA-SPEX package.                               #
+#                                                                             #
+# The code is hosted on GitHub at https://github.com/JuDFTteam/aiida-spex     #
+# For further information on the license, see the LICENSE.txt file            #
+# For further information please visit http://www.flapw.de or                 #
+###############################################################################
 """
 In this module is the :class:`~aiida_spex.data.spexinp.SpexinpData` class, and methods for SPEX
 input manipulation plus methods for extration of AiiDA data structures.
@@ -309,25 +318,6 @@ class SpexinpData(Data):
             spex_jobs['ldau'] = False
         return spex_jobs
 
-    def get_parameterdata_ncf(self):
-        """
-        This routine returns an AiiDA :class:`~aiida.orm.Dict` type produced from the ``spex.inp``
-        file. This node can be used for inpgen as `calc_parameters`.
-        This is NOT a calcfunction and does NOT keep the provenance!
-
-        :returns: :class:`~aiida.orm.Dict` node
-        """
-        from aiida_fleur.tools.xml_util import get_inpgen_paranode_from_xml
-        if 'spex.inp' not in self.files:
-            print('cannot get a Data because spexinpdata has no spex.inp file yet')
-            # TODO what to do in this case?
-            return False
-
-        # read in inpxml
-        spexinpfile = self.open(key='spex.inp', mode='r')
-        new_parameters = get_inpgen_paranode_from_xml(etree.parse(spexinpfile))
-        spexinpfile.close() # I don’t like this
-        return new_parameters
 
     # Is there a way to give self to calcfunctions?
     @staticmethod

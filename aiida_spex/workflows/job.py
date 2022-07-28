@@ -10,14 +10,18 @@
 ###############################################################################
 
 """
-In this module you find the workchain 'SpexJobWorkChain' for the self-consistency
+In this module you find the workchain 'SpexJobWorkChain' for the JOB
 cycle management of a SPEX calculation with AiiDA.
+
+NOTICE: inorder to avoid large amount of data transfer for upload and dowload ...
+... all necessary files for the calculation and restart are kept on the remote machine. ...
+... Therefore is is adviced to do the calculation in the same remote machine. 
 """
 
 from __future__ import absolute_import
 
 import six
-from aiida.common.exceptions import NotExistent
+from aiida.common.exceptions import NotExistent, InputValidationError
 from aiida.engine import ToContext, WorkChain
 from aiida.engine import calcfunction as cf
 from aiida.engine import if_, while_
@@ -29,6 +33,8 @@ from aiida_spex.tools.common_spex_wf import (
     test_and_get_codenode,
 )
 from aiida_spex.workflows.base_spex import SpexBaseWorkChain
+from aiida_spex.tools.spex_io import get_err_info
+from aiida_spex.tools.spexinp_utils import SpexInputValidation, ValidationError
 
 
 class SpexJobWorkChain(WorkChain):
@@ -39,7 +45,7 @@ class SpexJobWorkChain(WorkChain):
     Two paths are possible:
 
     (1) Start by doing a DFT calculation TODO
-    (2) Start from a Fleur calculation, with optional remoteData
+    (2) Start from a FLEUR/SPEX calculation, with remoteData
 
     :param wf_parameters: (Dict), Workchain Specifications
     :param calc_parameters: (Dict), Spexinp Parameters
@@ -50,8 +56,8 @@ class SpexJobWorkChain(WorkChain):
         like Success, last result node, list with convergence behavior
     """
 
-    _workflowversion = "1.0.0"
-    _default_wf_para = {"spex_runmax": 1}
+    _workflowversion = "1.1.2"
+    _default_wf_para = {"spex_runmax": 0}
 
     _default_options = {
         "resources": {"num_machines": 1, "num_mpiprocs_per_machine": 1},
@@ -74,14 +80,26 @@ class SpexJobWorkChain(WorkChain):
         spec.input("remote_data", valid_type=RemoteData, required=False)
 
         spec.input("settings", valid_type=Dict, required=False)
-        spec.outline(cls.start, cls.validate_input, cls.run_spex, cls.return_results)
+        spec.outline(
+            cls.start,
+            cls.validate_input,
+            cls.run_spex,
+            cls.inspect_spex,
+            cls.get_res,
+            cls.return_results,
+        )
 
         spec.output("output_spexjob_wc_para", valid_type=Dict)
         spec.output("last_spex_calc_output", valid_type=Dict)
-        spec.expose_outputs(SpexBaseWorkChain, namespace='last_calc')
+        spec.expose_outputs(SpexBaseWorkChain, namespace="last_calc")
 
         spec.exit_code(
-            230, "ERROR_INVALID_INPUT_PARAM", message="Invalid workchain parameters."
+            130, "ERROR_INVALID_INPUT_PARAM", message="Invalid workchain parameters."
+        )
+        spec.exit_code(
+            102,
+            "ERROR_SPEX_CALC_FAILED",
+            message="SPEX calculation failed for unknown reason.",
         )
 
     def start(self):
@@ -99,6 +117,14 @@ class SpexJobWorkChain(WorkChain):
         self.ctx.loop_count = 0
         self.ctx.calcs = []
         self.ctx.abort = False
+
+        # return para/vars
+        self.ctx.parse_last = True
+        self.ctx.successful = True
+        self.ctx.total_wall_time = 0
+        self.ctx.warnings = []
+        self.ctx.errors = []
+        self.ctx.info = []
 
         wf_default = self._default_wf_para
         if "wf_parameters" in self.inputs:
@@ -129,25 +155,22 @@ class SpexJobWorkChain(WorkChain):
             options[key] = options.get(key, val)
         self.ctx.options = options
 
-        self.ctx.max_number_runs = self.ctx.wf_dict.get("spex_runmax", 4)
+        self.ctx.max_number_runs = self.ctx.wf_dict.get("spex_runmax", 2)
         self.ctx.description_wf = self.inputs.get("description", "") + "|spex_job_wc|"
         self.ctx.label_wf = self.inputs.get("label", "spex_job_wc")
 
         # return para/vars
-        self.ctx.successful = True
-        self.ctx.warnings = []
-        # "debug": {},
-        self.ctx.errors = []
-        self.ctx.info = []
-        self.ctx.total_wall_time = 0
 
     def validate_input(self):
         """
-        # validate input and find out which path (1, or 2) to take
-        # return True means run fleur, if false run spex directly: TODO
+        Validate input parameters
         """
-        pass
-
+        try:
+            SpexInputValidation(**self.inputs.parameters.get_dict())
+        except ValidationError as e:
+            raise InputValidationError(
+                "Found following error in input parameters: {}".format(e)
+            )
     def run_spex(self):
         """
         run a SPEX calculation
@@ -167,16 +190,20 @@ class SpexJobWorkChain(WorkChain):
         else:
             remote = None
 
-        # This should move to validation
-        # if 'calc_parameters' in self.inputs:
-        #     params = self.inputs.calc_parameters
         if "parameters" in self.inputs:
             params = self.inputs.parameters
         else:
             return self.exit_codes.ERROR_INVALID_INPUT_PARAM
 
-        label = " "
-        description = " "
+        if "description" in self.inputs:
+            description = self.inputs.description
+        else:
+            description = " "
+
+        if "label" in self.inputs:
+            label = self.inputs.label
+        else:
+            label = " "
 
         code = self.inputs.spex
         options = self.ctx.options.copy()
@@ -196,6 +223,63 @@ class SpexJobWorkChain(WorkChain):
         self.ctx.calcs.append(future)
 
         return ToContext(last_base_wc=future)
+
+    def inspect_spex(self):
+        """
+        Analyse the results of the previous Calculation (Spex),
+        checking whether it finished successfully or if not, troubleshoot the
+        cause and adapt the input parameters accordingly before
+        restarting, or abort if unrecoverable error was found
+        """
+        self.report("INFO: inspect SPEX")
+        try:
+            base_wc = self.ctx.last_base_wc
+        except AttributeError:
+            self.ctx.parse_last = False
+            error = "ERROR: Something went wrong I do not have a last calculation"
+            self.control_end_wc(error)
+            return self.exit_codes.ERROR_SPEX_CALC_FAILED
+
+        exit_status = base_wc.exit_status
+        if not base_wc.is_finished_ok:
+            error = (
+                f"ERROR: Last SPEX calculation failed with exit status {exit_status}"
+            )
+            self.control_end_wc(error)
+            return self.exit_codes.ERROR_SPEX_CALC_FAILED
+        else:
+            self.ctx.parse_last = True
+
+    def get_res(self):
+        """
+        Check how the last SPEX calculation went
+        Parse some results.
+        """
+        self.report("INFO: get results SPEX")
+        if self.ctx.parse_last:
+            last_base_wc = self.ctx.last_base_wc
+            spex_calcjob = load_node(find_last_submitted_calcjob(last_base_wc))
+            walltime = last_base_wc.outputs.output_parameters.dict.walltime
+
+            if isinstance(walltime, int):
+                self.ctx.total_wall_time = self.ctx.total_wall_time + walltime
+
+            with spex_calcjob.outputs.retrieved.open(
+                spex_calcjob.process_class._ERROR_FILE_NAME, "r"
+            ) as errfile:
+                output_dict = get_err_info(errfile.read())
+
+            spex_info = output_dict.get("spex_info", [])
+            if spex_info is not None:
+                self.ctx.info.extend(spex_info)
+
+            spex_warnings = output_dict.get("spex_warnings", [])
+            if spex_warnings is not None:
+                self.ctx.warnings.extend(spex_warnings)
+
+            spex_errors = output_dict.get("spex_errors", [])
+            if spex_errors is not None:
+                self.ctx.errors.extend(spex_errors)
 
     def return_results(self):
         """
@@ -256,9 +340,13 @@ class SpexJobWorkChain(WorkChain):
 
         if last_calc_out:
             outdict["last_spex_calc_output"] = last_calc_out
-        
+
         if self.ctx.last_base_wc:
-            self.out_many(self.exposed_outputs(self.ctx.last_base_wc, SpexBaseWorkChain, namespace='last_calc'))
+            self.out_many(
+                self.exposed_outputs(
+                    self.ctx.last_base_wc, SpexBaseWorkChain, namespace="last_calc"
+                )
+            )
 
         # outdict['output_spexjob_wc_para'] = outputnode
         for link_name, node in six.iteritems(outdict):

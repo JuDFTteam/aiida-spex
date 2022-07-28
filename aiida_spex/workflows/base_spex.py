@@ -26,42 +26,24 @@ from aiida.plugins import CalculationFactory, DataFactory
 
 from aiida_spex.calculations.spex import SpexCalculation
 from aiida_spex.common.workchain.base.restart import BaseRestartWorkChain
-from aiida_spex.common.workchain.utils import (ErrorHandlerReport,
-                                               register_error_handler)
+from aiida_spex.common.workchain.spex_utils import (
+    ErrorHandlerReport,
+    register_error_handler,
+)
 from aiida_spex.tools.spexinp_utils import check_parameters
 
 
 class SpexBaseWorkChain(BaseRestartWorkChain):
     """Workchain to run a SPEX calculation with automated error handling and restarts"""
 
-    _workflowversion = "0.1.1"
+    _workflowversion = "1.0.3"
 
     _calculation_class = SpexCalculation
 
     @classmethod
     def define(cls, spec):
         super().define(spec)
-        spec.input("code", valid_type=orm.Code, help="The SPEX code.")
-        spec.input(
-            "parent_folder",
-            valid_type=orm.RemoteData,
-            required=False,
-            help="An optional working directory of a previously completed calculation to restart from.",
-        )
-        spec.input(
-            "parameters",
-            valid_type=orm.Dict,
-            required=False,
-            help="Calculation parameters.",
-        )
-
-        spec.input(
-            "settings",
-            valid_type=orm.Dict,
-            required=False,
-            help="Optional parameters to affect the way the calculation job and the parsing"
-            " are performed.",
-        )
+        spec.expose_inputs(SpexCalculation, exclude=("metadata.options",))
         spec.input(
             "options",
             valid_type=orm.Dict,
@@ -101,9 +83,15 @@ class SpexBaseWorkChain(BaseRestartWorkChain):
         spec.expose_outputs(SpexCalculation)
 
         spec.exit_code(
-            390,
+            290,
             "ERROR_INVALID_PARAMETERS",
             message="The input parameters are invalid.",
+        )
+        spec.exit_code(
+            299,
+            "ERROR_SOMETHING_WENT_WRONG",
+            message="SpexJobWorkChain failed and SpexBaseWorkChain has no"
+            " strategy to resolve this",
         )
 
     def validate_inputs(self):
